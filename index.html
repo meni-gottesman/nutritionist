@@ -1,0 +1,1200 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Your complete daily nutrition targets — about 42 evidence-based numbers, calculated privately in your browser.">
+<title>Your Nutritionist — evidence-based daily nutrition targets</title>
+<style>
+/* ============================ tokens ============================ */
+:root{
+  --bg:#f6f9f7; --surface:#fff; --surface2:#f2f6f3;
+  --ink:#16211b; --muted:#5c6b62; --faint:#84968c;
+  --line:#e2eae5; --line2:#d3ded7;
+  --accent:#2f7d52; --accent-ink:#1f5d3b; --accent-soft:#e8f2ec;
+  --warn:#8a6410; --warn-soft:#fdf5e3; --warn-line:#ecdcb4;
+  --danger:#a33328; --danger-soft:#fdeeec; --danger-line:#f2cdc7;
+  --shadow:0 1px 2px rgba(20,40,28,.04),0 12px 28px -18px rgba(20,40,28,.28);
+  --r-card:16px; --r-ctl:12px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1512; --surface:#161e19; --surface2:#1b2520;
+    --ink:#e8efe9; --muted:#9baca2; --faint:#7d8f85;
+    --line:#253029; --line2:#314037;
+    --accent:#5cbb8a; --accent-ink:#8ed7b0; --accent-soft:#14291f;
+    --warn:#d8a94f; --warn-soft:#241d0e; --warn-line:#40331a;
+    --danger:#e08278; --danger-soft:#2a1614; --danger-line:#452420;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 32px -20px rgba(0,0,0,.7);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ============================ shell ============================ */
+.wrap{max-width:660px;margin:0 auto;padding:0 20px}
+.topbar{
+  position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);
+  backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top);
+}
+.topbar-in{display:flex;align-items:center;gap:10px;height:52px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:650;font-size:16px;letter-spacing:-.01em}
+.brand .dot{font-size:18px;line-height:1}
+.topbar .spacer{flex:1}
+.tb-btn{background:none;border:0;color:var(--muted);font-size:14px;font-weight:550;cursor:pointer;padding:8px;border-radius:8px}
+.tb-btn:hover{color:var(--accent)}
+
+.prog{height:3px;background:var(--line);position:relative;overflow:hidden}
+.prog i{position:absolute;inset:0 auto 0 0;background:var(--accent);width:0;transition:width .32s cubic-bezier(.4,0,.2,1)}
+
+/* ============================ steps ============================ */
+main{padding:26px 0 120px}
+.step{display:none;animation:in .26s cubic-bezier(.2,.7,.3,1)}
+.step.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.step{animation:none}.prog i{transition:none}}
+
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-size:clamp(26px,6vw,33px);line-height:1.14;letter-spacing:-.022em;font-weight:700;margin:0 0 8px;text-wrap:balance}
+.sub{color:var(--muted);font-size:16px;margin:0 0 24px;max-width:46ch;text-wrap:pretty}
+h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:28px 0 10px}
+
+/* fields */
+.fields{display:grid;gap:16px}
+.f{display:grid;gap:7px}
+.f > .lab{font-size:14px;font-weight:600}
+.f .hint{font-size:13px;color:var(--muted);line-height:1.4}
+.in{
+  width:100%;font:inherit;font-size:17px;padding:14px 15px;border-radius:var(--r-ctl);
+  border:1px solid var(--line2);background:var(--surface);color:var(--ink);min-height:52px;
+}
+.in::placeholder{color:var(--faint)}
+.in:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.suffix{position:relative}
+.suffix .u{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
+
+/* segmented */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--surface2);border:1px solid var(--line);padding:4px;border-radius:var(--r-ctl)}
+.seg button{
+  border:0;background:none;padding:12px 8px;border-radius:9px;font-size:15px;font-weight:550;
+  color:var(--muted);cursor:pointer;min-height:44px;transition:background .15s,color .15s
+}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.07)}
+
+/* option cards */
+.opts{display:grid;gap:9px}
+.opt{
+  display:flex;align-items:flex-start;gap:13px;text-align:left;width:100%;
+  background:var(--surface);border:1px solid var(--line2);border-radius:var(--r-card);
+  padding:15px 16px;cursor:pointer;transition:border-color .15s,background .15s;min-height:56px
+}
+.opt:hover{border-color:var(--accent)}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset}
+.opt .tick{
+  flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);
+  display:grid;place-items:center;margin-top:1px;color:#fff;font-size:12px
+}
+.opt[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent)}
+.opt .tick svg{width:12px;height:12px;opacity:0}
+.opt[aria-pressed="true"] .tick svg{opacity:1}
+.opt .t{font-weight:600;font-size:16px;line-height:1.3}
+.opt .d{color:var(--muted);font-size:13.5px;line-height:1.4;margin-top:2px}
+.opt.rec .t::after{content:"Recommended";margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 32%,transparent);padding:2px 7px;border-radius:999px;vertical-align:2px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  border:1px solid var(--line2);background:var(--surface);border-radius:999px;
+  padding:10px 15px;font-size:14.5px;font-weight:520;cursor:pointer;min-height:44px;
+  transition:border-color .15s,background .15s,color .15s
+}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+/* buttons / nav */
+.navbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)
+}
+.navbar-in{display:flex;align-items:center;gap:10px;padding:12px 0}
+.btn{
+  border:0;border-radius:var(--r-ctl);padding:15px 22px;font-size:16.5px;font-weight:650;
+  cursor:pointer;min-height:52px;background:var(--accent);color:#fff;flex:1;transition:filter .15s
+}
+.btn:hover{filter:brightness(1.07)}
+.btn[disabled]{opacity:.42;cursor:not-allowed;filter:none}
+.btn.ghost{background:none;color:var(--muted);border:1px solid var(--line2);flex:0 0 auto;padding:15px 18px}
+.btn.link{background:none;color:var(--muted);border:0;flex:0 0 auto;font-weight:550;font-size:15px;padding:15px 10px}
+
+.note{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--muted);line-height:1.5}
+.note b{color:var(--ink);font-weight:620}
+.privacy{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);border-radius:999px;padding:8px 14px;font-size:13.5px;font-weight:600}
+.legal{font-size:12.5px;color:var(--faint);line-height:1.5;margin-top:18px}
+
+/* ============================ reveal ============================ */
+.hero{text-align:center;padding:14px 0 4px}
+.hero .kcal{font-size:clamp(54px,16vw,78px);font-weight:700;letter-spacing:-.045em;line-height:1;margin:6px 0 2px}
+.hero .unit{font-size:17px;color:var(--muted);font-weight:500}
+.hero .band{color:var(--muted);font-size:14.5px;margin-top:10px}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+
+/* ============================ results ============================ */
+#results{display:none}
+#results.on{display:block}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--surface2);border:1px solid var(--line);padding:4px;border-radius:var(--r-ctl);margin:4px 0 22px;position:sticky;top:56px;z-index:20}
+.tabs button{border:0;background:none;padding:11px 6px;border-radius:9px;font-size:14.5px;font-weight:550;color:var(--muted);cursor:pointer;min-height:44px}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.pane{display:none}.pane.on{display:block}
+
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:17px 18px;box-shadow:var(--shadow)}
+.tcard.hero2{text-align:center;padding:26px 18px}
+.tcard.hero2 .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tcard.hero2 .v{font-size:clamp(46px,13vw,64px);font-weight:700;letter-spacing:-.04em;line-height:1;margin:8px 0 4px}
+.mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:10px;margin-top:12px}
+.mini .m{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px;min-width:0}
+.mini .m .mk{font-size:12.5px;color:var(--muted);font-weight:550}
+.mini .m .mv{font-size:18px;font-weight:700;letter-spacing:-.025em;margin-top:3px;color:var(--accent);overflow-wrap:anywhere}
+.tblurb{font-size:13.5px;color:var(--muted);line-height:1.5;margin:-4px 0 12px}
+
+.search{position:relative;margin-bottom:14px}
+.search input{width:100%;font:inherit;font-size:16px;padding:13px 15px 13px 40px;border-radius:var(--r-ctl);border:1px solid var(--line2);background:var(--surface);color:var(--ink);min-height:48px}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.viewtog{display:flex;gap:6px;margin-bottom:16px}
+.viewtog button{flex:1;border:1px solid var(--line2);background:var(--surface);border-radius:10px;padding:9px;font-size:13.5px;font-weight:550;color:var(--muted);cursor:pointer;min-height:42px}
+.viewtog button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:650}
+
+.ansrow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.ansrow .ak{font-size:14px;color:var(--muted);flex:0 0 42%}
+.ansrow .av{font-weight:600;font-size:15px;flex:1}
+.ansrow button{background:none;border:0;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;padding:6px}
+
+/* ============ engine output restyle (#hdc-out lives in All targets) ============ */
+.tgt .hdc-sub{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px}
+.tgt .hdc-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:620px){.tgt .hdc-grid{grid-template-columns:1fr 1fr}}
+.tgt .hdc-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:15px 16px;min-width:0}
+.tgt .hdc-khz{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.tgt .hdc-k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tgt .hdc-v{font-size:23px;font-weight:700;color:var(--accent);letter-spacing:-.02em;margin:6px 0 5px;line-height:1.15;overflow-wrap:anywhere}
+.tgt .hdc-band{display:block;font-size:12.5px;font-weight:500;color:var(--muted);margin-top:2px}
+.tgt .hdc-n{font-size:13px;color:var(--muted);line-height:1.5}
+.tgt .hdc-hz{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px;white-space:nowrap;flex:0 0 auto;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.tgt .hdc-hzleg{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin:0 0 6px;font-size:13.5px;color:var(--muted);line-height:1.5}
+.tgt .hdc-hzk{display:inline-flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tgt .hdc-more{border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface2);margin-top:18px}
+.tgt .hdc-more>summary{cursor:pointer;padding:15px 16px;font-weight:620;color:var(--accent);font-size:15px;list-style:none;min-height:52px;display:flex;align-items:center}
+.tgt .hdc-more>summary::-webkit-details-marker{display:none}
+.tgt .hdc-more>summary::before{content:"▸ ";color:var(--muted)}
+.tgt .hdc-more[open]>summary::before{content:"▾ "}
+.tgt .hdc-more>div{padding:0 14px 14px}
+.tgt .hdc-cond,.tgt .hdc-flags,.tgt .hdc-warn{border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.55;margin-top:12px}
+.tgt .hdc-cond{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+.tgt .hdc-flags{background:var(--warn-soft);border:1px solid var(--warn-line);color:var(--warn)}
+.tgt .hdc-warn{background:var(--danger-soft);border:1px solid var(--danger-line);color:var(--danger)}
+.tgt .hdc-cond ul,.tgt .hdc-flags ul,.tgt .hdc-warn ul{margin:8px 0 0;padding-left:19px}
+.tgt .hdc-cond li,.tgt .hdc-flags li,.tgt .hdc-warn li{margin:5px 0}
+.tgt .hdc-disc{font-size:12.5px;color:var(--faint);line-height:1.55;margin-top:20px}
+.tgt .hdc-hint{color:var(--muted);font-size:15px}
+.hidecard{display:none !important}
+
+/* body-fat estimator sheet */
+.sheet{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;background:rgba(10,20,15,.45)}
+.sheet.on{display:flex}
+.sheet-in{background:var(--bg);width:100%;max-width:660px;max-height:88vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:22px 20px calc(28px + env(safe-area-inset-bottom));border:1px solid var(--line)}
+.sheet h3{margin:0 0 4px;font-size:20px;letter-spacing:-.015em}
+.sheet .close{position:sticky;top:0;float:right;background:var(--surface2);border:1px solid var(--line);border-radius:999px;width:34px;height:34px;cursor:pointer;color:var(--muted);font-size:17px;line-height:1}
+.bfcards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tape{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+.engine-dom{display:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <span class="brand"><span class="dot">🍎</span> Your Nutritionist</span>
+    <span class="spacer"></span>
+    <button class="tb-btn" id="restart" hidden>Start over</button>
+  </div>
+</div>
+<div class="prog"><i id="progbar"></i></div>
+
+<div class="hdcalc" id="app">
+<div class="wrap">
+
+<main id="steps">
+
+  <!-- ============ 0 · welcome ============ -->
+  <section class="step on" data-step="welcome">
+    <p class="eyebrow">Evidence-based</p>
+    <h1>Your complete daily nutrition targets.</h1>
+    <p class="sub">About 42 numbers — calories, macros, limits, food groups, vitamins and minerals — each personalised to you and backed by published research.</p>
+    <p><span class="privacy">🔒 Runs entirely in your browser. Nothing is uploaded.</span></p>
+    <div class="note" style="margin-top:22px">
+      <b>Takes about a minute.</b> A few questions about you, then you'll see your calorie number — the rest follows.
+    </div>
+    <p class="legal">Educational, not medical advice. For pregnancy, medical conditions, medications, or any history of disordered eating, work with a doctor or registered dietitian.</p>
+  </section>
+
+  <!-- ============ 1 · basics ============ -->
+  <section class="step" data-step="basics">
+    <p class="eyebrow">Step 1</p>
+    <h1>A few basics</h1>
+    <p class="sub">These set your baseline energy needs.</p>
+    <div class="fields">
+      <div class="f">
+        <span class="lab">Biological sex</span>
+        <div class="seg" id="seg-sex" role="group" aria-label="Biological sex">
+          <button type="button" data-v="female">Female</button>
+          <button type="button" data-v="male">Male</button>
+        </div>
+        <span class="hint">Used for the formulas and nutrient reference values.</span>
+      </div>
+      <div class="f">
+        <label class="lab" for="hdc-age">Age</label>
+        <div class="suffix"><input class="in num" id="hdc-age" type="number" inputmode="numeric" min="14" max="100" placeholder="e.g. 34"><span class="u">years</span></div>
+      </div>
+      <div class="f">
+        <span class="lab">Units</span>
+        <div class="seg" id="seg-units" role="group" aria-label="Units">
+          <button type="button" data-v="metric">Metric</button>
+          <button type="button" data-v="us">US</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 · body ============ -->
+  <section class="step" data-step="body">
+    <p class="eyebrow">Step 2</p>
+    <h1>Height &amp; weight</h1>
+    <p class="sub">The two numbers your energy needs are built from.</p>
+    <div class="fields">
+      <div class="f" id="wrap-cm">
+        <label class="lab" for="hdc-h-cm">Height</label>
+        <div class="suffix"><input class="in num" id="hdc-h-cm" type="number" inputmode="decimal" placeholder="e.g. 178"><span class="u">cm</span></div>
+      </div>
+      <div class="f" id="wrap-ftin" hidden>
+        <span class="lab">Height</span>
+        <div class="row2">
+          <div class="suffix"><input class="in num" id="hdc-h-ft" type="number" inputmode="numeric" placeholder="5"><span class="u">ft</span></div>
+          <div class="suffix"><input class="in num" id="hdc-h-in" type="number" inputmode="numeric" placeholder="10"><span class="u">in</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <label class="lab" for="hdc-w">Weight</label>
+        <div class="suffix"><input class="in num" id="hdc-w" type="number" inputmode="decimal" placeholder="e.g. 72"><span class="u" id="wunit">kg</span></div>
+      </div>
+      <div class="f">
+        <label class="lab" for="hdc-bf">Body fat % <span style="font-weight:400;color:var(--muted)">— optional</span></label>
+        <div class="suffix"><input class="in num" id="hdc-bf" type="number" inputmode="decimal" min="3" max="60" placeholder="skip if unsure"><span class="u">%</span></div>
+        <span class="hint">Only helps if it's a real measurement — a guess can make the numbers worse. <button type="button" class="btn link" id="open-bf" style="padding:0;color:var(--accent);font-weight:600;min-height:0">Estimate it →</button></span>
+      </div>
+    </div>
+    <div class="note" style="margin-top:20px">Body fat % is just one input to the math — <b>not a health or worth score</b>. Leaving it blank is completely fine.</div>
+  </section>
+
+  <!-- ============ 3 · daily activity ============ -->
+  <section class="step" data-step="activity">
+    <p class="eyebrow">Step 3</p>
+    <h1>How much do you move day to day?</h1>
+    <p class="sub">Your job and lifestyle — <b>not</b> counting workouts. Those come next, added on top.</p>
+    <div class="opts" id="opt-neat" role="group" aria-label="Daily activity"></div>
+  </section>
+
+  <!-- ============ 4 · workouts ============ -->
+  <section class="step" data-step="workouts">
+    <p class="eyebrow">Step 4</p>
+    <h1>Do you log workouts?</h1>
+    <p class="sub">Enter the calories you burn in a typical day of exercise. Leave it at 0 if you'd rather not track it.</p>
+    <div class="fields">
+      <div class="f">
+        <label class="lab" for="hdc-ex">Workout calories per day</label>
+        <div class="suffix"><input class="in num" id="hdc-ex" type="number" inputmode="numeric" min="0" max="3500" placeholder="0"><span class="u">kcal</span></div>
+        <span class="hint">Added on top of your daily activity — never counted twice.</span>
+      </div>
+    </div>
+    <div class="note" style="margin-top:20px">Watch and tracker estimates tend to run high. Treat this as a rough figure and adjust from your real weight trend over a few weeks.</div>
+  </section>
+
+  <!-- ============ 5 · goal ============ -->
+  <section class="step" data-step="goal">
+    <p class="eyebrow">Step 5</p>
+    <h1>What are you aiming for?</h1>
+    <p class="sub">You can change this any time — nothing here is locked in.</p>
+    <div class="opts" id="opt-goal" role="group" aria-label="Goal"></div>
+  </section>
+
+  <!-- ============ 6 · pace (conditional) ============ -->
+  <section class="step" data-step="pace">
+    <p class="eyebrow">Step 6</p>
+    <h1>How fast?</h1>
+    <p class="sub">Slower protects muscle and is far easier to sustain. Anything above 1% of body weight per week isn't advised without a clinician.</p>
+    <div class="opts" id="opt-pace" role="group" aria-label="Pace"></div>
+  </section>
+
+  <!-- ============ 7 · reveal ============ -->
+  <section class="step" data-step="reveal">
+    <p class="eyebrow">Your number</p>
+    <h1>Here's your daily energy target.</h1>
+    <div class="hero">
+      <div class="kcal num" id="rv-kcal">—</div>
+      <div class="unit">kcal per day</div>
+      <div class="band num" id="rv-band"></div>
+      <div style="margin-top:14px"><span class="pill" id="rv-pill">WEEKLY AVERAGE</span></div>
+    </div>
+    <div class="note" style="margin-top:22px" id="rv-note"></div>
+    <p class="sub" style="margin-top:20px">A few optional questions next — allergies, health conditions, life stage — and we'll tailor the other 41 targets to match.</p>
+  </section>
+
+  <!-- ============ 8 · life stage ============ -->
+  <section class="step" data-step="life">
+    <p class="eyebrow">Optional</p>
+    <h1>Anything else about you?</h1>
+    <p class="sub">These change several targets meaningfully. Skip if none apply.</p>
+    <div id="life-female">
+      <h2 class="grp">Life stage</h2>
+      <div class="chips">
+        <button type="button" class="chip" data-cb="hdc-preg">Pregnant</button>
+        <button type="button" class="chip" data-cb="hdc-lac">Breastfeeding</button>
+      </div>
+      <div class="f" id="wrap-tri" style="margin-top:14px" hidden>
+        <span class="lab">Trimester</span>
+        <div class="seg" id="seg-tri" role="group" aria-label="Trimester">
+          <button type="button" data-v="1">First</button>
+          <button type="button" data-v="2">Second</button>
+          <button type="button" data-v="3">Third</button>
+        </div>
+      </div>
+    </div>
+    <h2 class="grp">Other</h2>
+    <div class="chips"><button type="button" class="chip" data-cb="hdc-smoke">I smoke</button></div>
+  </section>
+
+  <!-- ============ 9 · restrictions ============ -->
+  <section class="step" data-step="diet">
+    <p class="eyebrow">Optional</p>
+    <h1>How do you eat?</h1>
+    <p class="sub">We'll adjust targets and swap the food suggestions to match.</p>
+    <div class="chips" id="chips-r"></div>
+  </section>
+
+  <!-- ============ 10 · conditions ============ -->
+  <section class="step" data-step="health">
+    <p class="eyebrow">Optional</p>
+    <h1>Any health conditions?</h1>
+    <p class="sub">Several of these change your targets — sodium, protein, potassium and more. Your answers stay on this device.</p>
+    <div class="chips" id="chips-d"></div>
+    <p class="legal">This tool is educational and can't replace your clinician. If you have a medical condition, confirm these numbers with them.</p>
+  </section>
+
+</main>
+
+<!-- ============================ RESULTS ============================ -->
+<div id="results">
+  <div class="tabs" role="tablist">
+    <button role="tab" data-pane="today" aria-selected="true">Today</button>
+    <button role="tab" data-pane="all" aria-selected="false">All targets</button>
+    <button role="tab" data-pane="answers" aria-selected="false">Your answers</button>
+  </div>
+
+  <div class="pane on" id="pane-today">
+    <div class="tcard hero2">
+      <div class="k">Daily calories</div>
+      <div class="v num" id="t-kcal">—</div>
+      <div style="color:var(--muted);font-size:14.5px" class="num" id="t-band"></div>
+      <div style="margin-top:12px"><span class="pill">WEEKLY AVERAGE</span></div>
+      <div style="margin-top:14px;color:var(--muted);font-size:14px;line-height:1.5">Judge this over a week — single days move around, and that's normal.</div>
+    </div>
+    <div class="mini" id="t-macros"></div>
+    <h2 class="grp">Worth knowing</h2>
+    <div class="mini" id="t-key"></div>
+    <div class="note" style="margin-top:20px">Every target carries the <b>timescale it's genuinely best judged over</b> — most vitamins and minerals buffer for weeks, so you don't need to hit them daily. See <b>All targets</b> for the full set.</div>
+  </div>
+
+  <div class="pane" id="pane-all">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search targets — protein, iron, sodium…" aria-label="Search targets">
+    </div>
+    <div class="viewtog" role="group" aria-label="Grouping">
+      <button type="button" id="v-group" aria-pressed="true">By group</button>
+      <button type="button" id="v-time" aria-pressed="false">By timescale</button>
+    </div>
+    <div id="hdc-out" class="tgt"></div>
+    <div id="by-time" class="tgt" hidden></div>
+  </div>
+
+  <div class="pane" id="pane-answers">
+    <div id="ans"></div>
+    <p class="legal" id="ans-legal">Everything above stays in this browser. Nothing is uploaded, and clearing your browser data removes it.</p>
+  </div>
+
+  <p class="legal" style="text-align:center;margin:30px 0 10px">
+    <a href="Healthiest-Diet-Guide.html" style="color:var(--accent);font-weight:600;text-decoration:none">Read the full evidence guide →</a><br>
+    <span style="display:inline-block;margin-top:8px">22 sections, ~360 cited sources — the research every number here comes from.</span>
+  </p>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ===== engine DOM: real controls the verified engine reads. Driven by the UI above. ===== -->
+<div class="engine-dom" aria-hidden="true">
+  <select id="hdc-sex"><option value="female">Female</option><option value="male">Male</option></select>
+  <select id="hdc-units"><option value="metric">Metric</option><option value="us">US</option></select>
+  <span id="hdc-metric-h"></span><span id="hdc-us-h"></span><span id="hdc-w-unit">kg</span>
+  <select id="hdc-neat">
+    <option value="1.25">Mostly sitting (desk job)</option>
+    <option value="1.45" selected>Lightly active (some walking/standing)</option>
+    <option value="1.7">On your feet most of the day</option>
+    <option value="1.9">Physical / manual-labor job</option>
+    <option value="2.2">Very heavy labor</option>
+  </select>
+  <select id="hdc-goal">
+    <option value="lose">Lose fat</option><option value="gain">Gain (build muscle)</option>
+    <option value="recomp">Recomp (same weight)</option><option value="maintain" selected>Maintain &amp; get healthier</option>
+  </select>
+  <span id="hdc-pacelbl"><select id="hdc-pace"><option value="gentle">Gentle</option><option value="moderate" selected>Moderate</option><option value="aggressive">Aggressive</option></select></span>
+  <span id="hdc-preglbl"><input id="hdc-preg" type="checkbox"></span>
+  <span id="hdc-trilbl"><select id="hdc-tri"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option></select></span>
+  <span id="hdc-laclbl"><input id="hdc-lac" type="checkbox"></span>
+  <input id="hdc-smoke" type="checkbox">
+  <input id="r-vegan" type="checkbox"><input id="r-veg" type="checkbox"><input id="r-dairy" type="checkbox">
+  <input id="r-gluten" type="checkbox"><input id="r-nut" type="checkbox"><input id="r-fish" type="checkbox">
+  <input id="r-egg" type="checkbox"><input id="r-soy" type="checkbox"><input id="r-sesame" type="checkbox">
+  <input id="d-hbp" type="checkbox"><input id="d-t2d" type="checkbox"><input id="d-ldl" type="checkbox">
+  <input id="d-ckd" type="checkbox"><input id="d-gout" type="checkbox"><input id="d-ibs" type="checkbox">
+  <input id="d-nafld" type="checkbox"><input id="d-bone" type="checkbox"><input id="d-gerd" type="checkbox">
+  <input id="d-hf" type="checkbox"><input id="d-glp1" type="checkbox">
+</div>
+</div><!-- /.hdcalc -->
+
+<div class="navbar">
+  <div class="wrap navbar-in">
+    <button class="btn ghost" id="back">Back</button>
+    <button class="btn" id="next">Start</button>
+    <button class="btn link" id="skip" hidden>Skip</button>
+  </div>
+</div>
+
+<!-- ===== body-fat estimator sheet ===== -->
+<div class="sheet" id="bf-sheet" role="dialog" aria-modal="true" aria-label="Estimate body fat">
+ <div class="sheet-in">
+  <button class="close" id="bf-close" aria-label="Close">✕</button>
+  <h3>Estimate your body fat</h3>
+  <p class="sub" style="margin-bottom:18px">Rough estimates (±3–5%). The tape method is the most accurate and stays on your device.</p>
+
+  <h2 class="grp" style="margin-top:0">1 · Tape measure — most accurate</h2>
+  <div class="tape">
+    <div class="f"><label class="lab" for="bft-neck">Neck (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-neck" type="number" inputmode="decimal" placeholder="neck"></div>
+    <div class="f"><label class="lab" for="bft-waist">Waist (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-waist" type="number" inputmode="decimal" placeholder="at navel"></div>
+    <div class="f" id="bft-hipwrap"><label class="lab" for="bft-hip">Hips (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-hip" type="number" inputmode="decimal" placeholder="widest"></div>
+    <div class="f" style="align-self:end"><button class="btn" id="bft-calc" style="min-height:52px">Estimate</button></div>
+  </div>
+  <div id="bft-out" style="margin-top:10px;font-weight:650;color:var(--accent)"></div>
+  <p class="hint" style="color:var(--muted);font-size:13px;margin-top:8px">US-Navy method: waist at the navel, neck just below the larynx<span class="bft-hiponly">, hips at the widest point</span>. ±3–4% vs a DEXA scan.</p>
+
+  <h2 class="grp">2 · Match the closest description</h2>
+  <div class="bfcards" id="hdc-bf-visual"></div>
+
+  <h2 class="grp">3 · From a photo (AI — optional)</h2>
+  <div class="note" style="background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)">
+    ⚠️ This is the one thing here that <b>leaves your device</b> — your photo is sent to whichever AI service you configure, and the estimate is <b>not medically validated</b>. The tape method above is more reliable.
+  </div>
+  <label class="chip" style="margin-top:12px;display:inline-flex;align-items:center;gap:9px;cursor:pointer">
+    <input id="bfp-consent" type="checkbox" style="width:20px;height:20px"> I understand and want to use it
+  </label>
+  <div id="bfp-config" style="display:none;margin-top:14px;display:grid;gap:10px">
+    <div class="f"><label class="lab" for="bfp-url">Vision API endpoint</label><input class="in" id="bfp-url" type="text" placeholder="https://openrouter.ai/api/v1/chat/completions"></div>
+    <div class="f"><label class="lab" for="bfp-model">Model</label><input class="in" id="bfp-model" type="text" placeholder="e.g. google/gemini-2.5-flash"></div>
+    <div class="f"><label class="lab" for="bfp-key">API key</label><input class="in" id="bfp-key" type="password" placeholder="stored only on this device"></div>
+    <div class="f"><label class="lab" for="bfp-front">Front photo</label><input class="in" id="bfp-front" type="file" accept="image/*"></div>
+    <div class="f"><label class="lab" for="bfp-side">Side photo (optional)</label><input class="in" id="bfp-side" type="file" accept="image/*"></div>
+    <button class="btn" id="bfp-go">Estimate from photos</button>
+    <div id="bfp-out" style="font-weight:650;color:var(--accent)"></div>
+  </div>
+  <button class="btn" id="bf-done" style="margin-top:20px">Done</button>
+ </div>
+</div>
+
+<!-- ============ VERIFIED ENGINE (byte-identical to the 12.1M-profile-tested build) ============ -->
+<script>
+
+(function(){
+ var KEY="hdiet_refine_v1";
+ function g(id){return document.getElementById(id);}
+ function num(v){v=parseFloat(v);return isNaN(v)?0:v;}
+ function rng(a,b){return a===b?(""+a):(a+"–"+b);}
+ function ck(id){return g(id).checked;}
+ function loadDB(){try{return JSON.parse(localStorage.getItem(KEY))||{};}catch(e){return {};}}
+ function saveDB(d){try{localStorage.setItem(KEY,JSON.stringify(d));}catch(e){}}
+ function sync(){var us=g("hdc-units").value==="us";g("hdc-metric-h").style.display=us?"none":"";g("hdc-us-h").style.display=us?"":"none";g("hdc-w-unit").textContent=us?"lb":"kg";
+  var fem=g("hdc-sex").value==="female";
+  if(!fem){g("hdc-preg").checked=false;g("hdc-lac").checked=false;}
+  var pregOn=fem&&g("hdc-preg").checked;g("hdc-tri").disabled=!pregOn;
+  var _pl=g("hdc-preglbl"),_ll=g("hdc-laclbl"),_tl=g("hdc-trilbl");
+  if(_pl)_pl.style.display=fem?"":"none";if(_ll)_ll.style.display=fem?"":"none";if(_tl)_tl.style.display=pregOn?"":"none";
+  var wu=us?"lb":"kg",lu=us?"in":"cm",a=document.querySelectorAll(".rf-wu"),b=document.querySelectorAll(".rf-lu"),k;
+  for(k=0;k<a.length;k++)a[k].textContent=wu;for(k=0;k<b.length;k++)b[k].textContent=lu;
+  var _hw=g("rf-hipwrap");if(_hw)_hw.style.display=fem?"":"none";
+  var _vg=g("r-vegan"),_rv=g("r-veg");if(_vg&&_rv){if(_vg.checked){if(!_rv.disabled)_rv.setAttribute("data-uv",_rv.checked?"1":"0");_rv.checked=true;_rv.disabled=true;}else if(_rv.disabled){_rv.disabled=false;_rv.checked=(_rv.getAttribute("data-uv")==="1");}}
+  var _gl=g("hdc-goal").value,_ageV=num(g("hdc-age").value),_showPace=(_gl==="lose"||_gl==="gain")&&!(_ageV>0&&_ageV<18),_pc=g("hdc-pacelbl");if(_pc)_pc.style.display=_showPace?"":"none";
+  renderBFVisual();var _bu=document.querySelectorAll(".bft-u"),_qz;for(_qz=0;_qz<_bu.length;_qz++)_bu[_qz].textContent=us?"in":"cm";var _bhw=g("bft-hipwrap");if(_bhw)_bhw.style.display=fem?"":"none";var _bho=document.querySelectorAll(".bft-hiponly"),_qy;for(_qy=0;_qy<_bho.length;_qy++)_bho[_qy].style.display=fem?"":"none";}
+ var HZLAB={meal:["per meal","hz-meal","Judged PER MEAL — how you spread it across the day matters more than the daily sum. (Protein: muscle synthesis maxes ~0.4 g/kg per meal.)"],day:["daily","hz-day","A genuine DAILY target/ceiling — your body regulates it acutely or stores little, so aim for it most days."],mday:["few-day avg","hz-day","Judge over a ROLLING 2–3 DAYS — a single low or high day evens out; the short-run average is what counts."],week:["weekly average","hz-week","Judge over ~A WEEK — the dietary PATTERN drives the outcome, not any one day. One off day doesn't matter."],month:["monthly+","hz-month","BUFFERED by body stores for weeks–months — hit it on average over your usual pattern; never chase it daily. Assume adequate if your typical week includes the sources."],long:["long-term","hz-long","A long-horizon target (months–years) — consistency of the overall pattern is all that matters."]};
+ var HZMAP={"Calories":"week","Protein":"meal","Carbohydrate":"day","Total fat":"day","Omega-3 (EPA+DHA)":"week","Omega-3 (ALA)":"week","Fiber":"day","Water (drinks)":"day","Added sugar":"week","Saturated fat":"week","Trans fat":"week","Dietary cholesterol":"week","Sodium":"day","Caffeine":"day","Alcohol":"day","Vegetables &amp; fruit":"day","Whole grains":"week","Fish &amp; seafood":"week","Legumes, nuts &amp; seeds":"week","Red &amp; processed meat":"week","Vitamin A":"month","Vitamin C":"mday","Vitamin D":"month","Vitamin E":"month","Vitamin K":"day","Thiamin (B1)":"day","Riboflavin (B2)":"day","Niacin (B3)":"day","Vitamin B6":"day","Vitamin B12":"month","Choline":"week","Calcium":"month","Iron":"month","Magnesium":"mday","Zinc":"day","Iodine":"mday","Selenium":"month","Copper":"month","Potassium":"day"};
+ function card(k,v,n,hz){var code=hz||HZMAP[k];var b=HZLAB[code]?('<span class="hdc-hz '+HZLAB[code][1]+'" title="'+HZLAB[code][2]+'">'+HZLAB[code][0]+'</span>'):'';
+  return '<div class="hdc-card"><div class="hdc-khz"><div class="hdc-k">'+k+'</div>'+b+'</div><div class="hdc-v">'+v+'</div><div class="hdc-n">'+n+'</div></div>';}
+ function block(cls,title,arr){return arr.length?('<div class="'+cls+'"><strong>'+title+'</strong><ul><li>'+arr.join("</li><li>")+"</li></ul></div>"):"";}
+ function log10(x){return Math.log(x)/Math.log(10);}
+ function navyBF(sex,htCm,neck,waist,hip){var bf;
+  if(sex==="male"){if(waist<=neck||htCm<=0)return 0;bf=495/(1.0324-0.19077*log10(waist-neck)+0.15456*log10(htCm))-450;}
+  else{if((waist+hip)<=neck||htCm<=0)return 0;bf=495/(1.29579-0.35004*log10(waist+hip-neck)+0.22100*log10(htCm))-450;}
+  return (bf>=3&&bf<=60)?Math.round(bf*10)/10:0;}
+ function calibration(assumedIntake,formulaTDEE){
+  var db=loadDB(),w=(db.wlog||[]).slice().sort(function(a,b){return a.t-b.t;});
+  if(w.length<2)return null;
+  var f=w[0],l=w[w.length-1],days=(l.t-f.t)/86400000;
+  if(days<10)return null;
+  var dW=l.kg-f.kg,trendWk=dW/days*7;
+  var entered=num(g("rf-intake").value),intake=entered||assumedIntake||0;
+  var res={trendWk:trendWk,days:Math.round(days),n:w.length,intake:Math.round(intake),src:entered?"entered":"assumed = your current target",tdee:0,lastKg:l.kg};
+  if(intake>0){var t=intake-dW*7700/days;if(formulaTDEE){if(t<0.6*formulaTDEE)t=0.6*formulaTDEE;if(t>1.6*formulaTDEE)t=1.6*formulaTDEE;}res.tdee=Math.round(t/10)*10;}
+  return res;}
+ function applyGoal(t,goal,sex,bf,hasBF,preg,lac,tri,kg,bmi,pace){var c=t,note;
+  if(goal==="lose"){
+   var lean=hasBF&&((sex==="male"&&bf<15)||(sex==="female"&&bf<23));
+   var highAd=(hasBF&&((sex==="male"&&bf>=25)||(sex==="female"&&bf>=32)))||(!hasBF&&bmi>=30);
+   var rate=pace==="gentle"?0.005:(pace==="aggressive"?0.01:0.0075);
+   if(lean)rate=0.005;else if(pace==="aggressive"&&!highAd)rate=0.0075;if(rate>0.01)rate=0.01;
+   var rPct=rate<=0.005?"0.5":(rate<0.01?"0.75":"1");
+   var defc=Math.round(rate*kg*7700/7);c=t-defc;var fl=sex==="female"?1200:1500,floored=false;if(c<fl){c=fl;floored=true;}
+   var actDef=t-c,actRate=actDef*7/7700;
+   note="fat loss: −"+Math.round(actDef)+" kcal/day ≈ −"+actRate.toFixed(2)+" kg/wk ("+rPct+"%/wk of body weight, capped at 1%)"+(floored?(" — held at the "+fl+"-kcal floor, so the true rate is gentler; for faster loss at your size involve a clinician"):"")+(lean?" — kept gentle to protect lean mass at your low body fat":"");}
+  else if(goal==="gain"){var sp=pace==="gentle"?0.05:(pace==="aggressive"?0.15:0.10),sur=Math.round(sp*t);c=t+sur;note="lean gain: +"+sur+" kcal/day (+"+Math.round(sp*100)+"% over maintenance) — expect ~0.25–0.5%/wk on the scale; faster mostly adds fat, so bias slow and adjust off your 2-wk trend";}
+  else if(goal==="recomp"){c=t;note="recomposition: eat at maintenance with very high protein + resistance training — the scale holds while fat↓ and muscle↑";}
+  else{c=t;note="maintain — the win here is diet quality";}
+  if(preg){var pa=tri===1?0:(tri===2?340:452);c=t+pa;note="pregnancy: +"+pa+" kcal (T"+tri+"); do not diet to lose";}
+  else if(lac){c=t+400;note="breastfeeding: +330–400 kcal by stage (using +400); don't aggressively diet";}
+  return {cal:Math.round(c/10)*10,note:note};}
+ function calc(){
+  sync();
+  var sex=g("hdc-sex").value,age=num(g("hdc-age").value),us=g("hdc-units").value==="us",cm,kg;
+  if(us){cm=(num(g("hdc-h-ft").value)*12+num(g("hdc-h-in").value))*2.54;kg=num(g("hdc-w").value)*0.453592;}
+  else{cm=num(g("hdc-h-cm").value);kg=num(g("hdc-w").value);}
+  var bf=num(g("hdc-bf").value),neat=parseFloat(g("hdc-neat").value),ex=num(g("hdc-ex").value),goalReq=g("hdc-goal").value,pace=g("hdc-pace").value;
+  var preg=ck("hdc-preg"),lac=ck("hdc-lac"),tri=parseInt(g("hdc-tri").value,10),smoke=ck("hdc-smoke");
+  if(sex!=="female"){preg=false;lac=false;}
+  var vegan=ck("r-vegan"),rveg=ck("r-veg"),dairyf=ck("r-dairy"),glutenf=ck("r-gluten"),nutA=ck("r-nut"),fishA=ck("r-fish"),eggA=ck("r-egg"),soyA=ck("r-soy"),sesA=ck("r-sesame"),plant=vegan||rveg,dairyfEff=dairyf||vegan;
+  var hbp=ck("d-hbp"),t2d=ck("d-t2d"),ldl=ck("d-ldl"),ckd=ck("d-ckd"),gout=ck("d-gout"),ibs=ck("d-ibs"),nafld=ck("d-nafld"),bone=ck("d-bone"),gerd=ck("d-gerd"),hf=ck("d-hf"),glp1=ck("d-glp1");
+  var out=g("hdc-out");
+  var _valid=(age>0&&cm>0&&kg>0),_rb=document.querySelector(".hdc-refine-box");if(_rb)_rb.style.display=_valid?"":"none";
+  if(!_valid){out.innerHTML='<p class="hdc-hint">Enter a realistic age, height, and weight to see your numbers.</p>';renderRefine(0,0);return;}
+  if(age<14){out.innerHTML='<p class="hdc-hint">This engine is built for ages 14 and up &mdash; a child&rsquo;s needs are quite different. Please use a pediatric tool or ask a pediatrician / registered dietitian.</p>';renderRefine(0,0);return;}
+  if(cm<55||cm>272||kg<12||kg>500||age>120){out.innerHTML='<p class="hdc-hint">Some numbers look out of range &mdash; double-check your units (height in cm, weight in kg).</p>';renderRefine(0,0);return;}
+  var exRaw=ex,exNote="";if(ex>3500){ex=3500;exNote=" Heads-up: exercise capped at 3,500 kcal/day (you entered "+Math.round(exRaw)+").";}else if(ex<0){ex=0;exNote=" Exercise must be 0 or more — that entry was ignored.";}
+  var bfSrc="";
+  if(!(bf>=3&&bf<=60)&&g("rf-neck")){var nk=num(g("rf-neck").value),ws=num(g("rf-waist").value),hp=num(g("rf-hip").value);if(us){nk*=2.54;ws*=2.54;hp*=2.54;}if(nk&&ws&&(sex==="male"||hp)){var nb=navyBF(sex,cm,nk,ws,hp);if(nb){bf=nb;bfSrc=" (estimated from your tape measurements, ±~3–4%)";}}}
+  var older=age>=65,minor=age<18,m=cm/100,bmi=kg/(m*m);
+  var hasBF=bf>=3&&bf<=60,lbm=hasBF?kg*(1-bf/100):0,fatMass=hasBF?kg-lbm:0;
+  var bfBad=hasBF&&(function(){var ffmi=lbm/(m*m);return ffmi>(sex==="male"?27:24)||ffmi<(sex==="male"?13:11)||(((sex==="male")?(bf<8):(bf<12))&&bmi>=30)||(bf>45&&bmi<25);})();
+  if(bfBad){hasBF=false;lbm=0;fatMass=0;}
+  var bmr,bmeth;
+  if(hasBF){bmr=370+21.6*lbm;bmeth="Katch–McArdle";}else{bmr=10*kg+6.25*cm-5*age+(sex==="male"?5:-161);bmeth="Mifflin–St Jeor";}
+  var rawTDEE=bmr*neat+ex,capTDEE=bmr*2.4,capped=rawTDEE>capTDEE,formulaTDEE=capped?capTDEE:rawTDEE;
+  var tdeeBasis="BMR "+Math.round(bmr)+" ("+bmeth+") × daily activity "+neat+(ex>0?(" + "+ex+" workout kcal"):"")+(capped?" (capped at 2.4× BMR — the sustainable ceiling)":"");
+  var floorCal=sex==="female"?1200:1500;
+  var goal=goalReq,safety="";
+  if(minor){if(goalReq==="lose"||goalReq==="gain")goal="maintain";safety="Under 18: growth changes energy and protein needs, and any weight goal should be set with a pediatrician or registered dietitian. These are adult-style estimates shown at maintenance (no deliberate deficit or bulking surplus) — use only as rough background. Puberty + training drive a teen's gains, not a manufactured calorie surplus.";}
+  else if(goalReq==="lose"){
+   var lowBMI=(bmi<18.5),lowBF=(hasBF&&((sex==="male"&&bf<8)||(sex==="female"&&bf<16)));
+   if(lowBMI||lowBF){goal="maintain";safety="You're already at "+(lowBF?("a very low body fat ("+bf+"%)"):("a low BMI ("+bmi.toFixed(1)+")"))+" — a fat-loss deficit isn't advised and can harm health. Showing maintenance; if you meant to gain or recomp, switch the goal. A history of disordered eating? Please involve a professional.";}
+   else if(formulaTDEE<=floorCal){goal="maintain";safety="Your estimated maintenance (~"+Math.round(formulaTDEE)+" kcal) is at or below the safe minimum intake ("+floorCal+" kcal for your sex), so a calorie deficit isn't advisable — showing maintenance. If weight loss is genuinely needed at your size, set it with a clinician.";}
+  }
+  var prov=applyGoal(formulaTDEE,goal,sex,bf,hasBF,preg,lac,tri,kg,bmi,pace);
+  var calib=calibration(prov.cal,formulaTDEE);
+  var effTDEE=(calib&&calib.tdee)?calib.tdee:formulaTDEE;
+  var fin=applyGoal(effTDEE,goal,sex,bf,hasBF,preg,lac,tri,kg,bmi,pace);
+  var goalCal=fin.cal;
+  var calMeta=tdeeBasis+" = TDEE "+Math.round(formulaTDEE);
+  if(calib&&calib.tdee)calMeta+=" → calibrated to "+calib.tdee+" from "+calib.n+" weigh-ins / "+calib.days+" days (trend "+calib.trendWk.toFixed(2)+" kg/wk)";
+  var calNote=calMeta+". "+fin.note+". ±10–15% until calibrated; recheck vs your 2–4-wk trend."+exNote+(bfBad?" Note: the body-fat % you entered doesn't match your height/weight, so standard height/weight estimates were used instead — double-check that number.":"");
+  // PROTEIN — pregnancy/lactation FIRST (a pregnant CKD user must not get a renal low-protein target); CKD on actual/adjusted weight; lean mass only for high-protein goals
+  var pbasis=hasBF?lbm:(bmi>=30?24.9*m*m:kg);
+  var ckdBasis=(bmi>=30?24.9*m*m:kg);
+  var pbNote=(!hasBF&&bmi>=30)?" (on a healthy goal weight, since at BMI ≥30 current weight overstates protein)":"";
+  var heavy=(goal==="lose"||goal==="gain"||goal==="recomp"||ex>=300||neat>=1.7||glp1);
+  var pLo,pHi,pn;
+  if(preg){pLo=1.1*kg;pHi=1.3*kg;pn="pregnancy ~1.1 g/kg (on current weight)"+(ckd?" — and pregnancy WITH kidney disease RAISES protein needs (do NOT restrict); this must be set by your obstetric + renal team ⚕":"");}
+  else if(lac){pLo=1.3*kg;pHi=1.3*kg;pn="lactation ~1.3 g/kg (IOM DRI; on current weight)";}
+  else if(ckd){pLo=0.6*ckdBasis;pHi=0.8*ckdBasis;pn="CKD non-dialysis ~0.6–0.8 g/kg of body weight ⚕ (KDIGO; clinician-set) — this LOWER target overrides the usual 'more protein'";}
+  else if(hasBF){var lpk=heavy?2.0:1.6,hpk=heavy?2.4:2.0;pLo=lpk*lbm;pHi=hpk*lbm;if(older&&pLo<1.0*kg)pLo=1.0*kg;pn=(heavy?"2.0–2.4":"1.6–2.0")+" g/kg LEAN mass ("+Math.round(lbm)+" kg) — dosed on lean mass because you entered body fat"+(bfSrc?", from your tape estimate":"");}
+  else if(goal==="lose"||goal==="recomp"){pLo=1.6*pbasis;pHi=2.4*pbasis;pn=(goal==="recomp"?"recomposition":"fat-loss deficit")+": 1.6–2.4 g/kg to build/spare muscle"+pbNote;}
+  else if(glp1){pLo=1.6*pbasis;pHi=2.4*pbasis;pn="on a GLP-1: raised to 1.6–2.4 g/kg — 25–40% of GLP-1 weight loss can be lean mass, so keep protein high (upper end if losing fast) and resistance-train"+pbNote;}
+  else if(heavy){pLo=1.6*pbasis;pHi=2.2*pbasis;pn="building / very active: 1.6–2.2 g/kg"+pbNote;}
+  else if(older){pLo=1.0*pbasis;pHi=1.2*pbasis;pn="older adult: 1.0–1.2 g/kg"+pbNote;}
+  else{pLo=1.2*pbasis;pHi=1.6*pbasis;pn="general adult: 1.2–1.6 g/kg (2025–2030 DGA, adults under 75; a debated jump)"+pbNote;}
+  var meals=older?3:4,perLo=Math.round(pLo/meals),perHi=Math.round(pHi/meals);
+  // MACROS as a coherent partition of goalCal: protein target, fat from a 0.8 g/kg floor up to 35%, carbs = the remainder
+  var pMid=(pLo+pHi)/2;
+  var fatMin=Math.round(0.8*pbasis);
+  // Coherent-partition guard: a muscle-preserving plan can't fall below protein + essential fat.
+  // If the (floor-clamped) calories leave no room, raise calories to that true minimum so the
+  // macros always sum to the calorie total (fixes a rare edge: obese + very low BMR + aggressive cut).
+  var pfMinCal=Math.ceil((pMid*4+fatMin*9)/10)*10;
+  if(goalCal<pfMinCal){goalCal=pfMinCal;calNote+=" Raised to your protein + essential-fat minimum (~"+pfMinCal+" kcal) — you can't safely cut below that while keeping muscle.";}
+  var fatHi=Math.round(0.35*goalCal/9);if(fatHi<fatMin)fatHi=fatMin;
+  var fatCap=Math.floor((goalCal-pMid*4)/9);if(fatCap>=fatMin&&fatHi>fatCap)fatHi=fatCap;
+  var carbHi=Math.round((goalCal-pMid*4-fatMin*9)/4),carbLo=Math.round((goalCal-pMid*4-fatHi*9)/4);
+  if(carbHi<0)carbHi=0;if(carbLo<0)carbLo=0;if(carbLo>carbHi){var tt=carbLo;carbLo=carbHi;carbHi=tt;}
+  var fiber=Math.max(25,Math.round(14*goalCal/1000));
+  var satPct=(ldl||t2d)?0.06:0.10,satg=Math.round(satPct*goalCal/9),satOpt=Math.round(0.07*goalCal/9);
+  var sugarPct=(t2d||nafld)?0.05:0.10,sugE=Math.round(sugarPct*goalCal/4),sugAHA=(age<=18)?25:(sex==="female"?25:36),sug=Math.min(sugE,sugAHA),sugAHAbind=(sugarPct!==0.05&&sugAHA<sugE);
+  var sodium,sodNote;
+  if(hf){sodium=2000;sodNote="heart failure: avoid excess (~2,000–3,000 mg); strict <1,500 is NOT advised (SODIUM-HF)";}
+  else if(hbp||t2d){sodium=1500;sodNote="tightened to <1,500 mg (high BP / diabetes; AHA ideal)";}
+  else if(ckd){sodium=2000;sodNote="CKD: ~2,000 mg, individualized (KDIGO)";}
+  else{sodium=2300;sodNote="reduce below 2,300 mg (NASEM CDRR; WHO <2,000); AHA's ideal is 1,500 mg where achievable";}
+  var prodHi=Math.max(600,Math.min(1200,Math.round(goalCal/2000*800/50)*50));
+  var wlo=30*kg/1000,whi=35*kg/1000,wStage="";if(lac){wlo+=0.9;whi+=0.9;wStage=" +0.9 (lactation, IOM)";}else if(preg){wlo+=0.3;whi+=0.3;wStage=" +0.3 (preg)";}
+  var waterNote="~30–35 mL/kg"+wStage+"; +0.5–1 L per hour of exercise/heat"+(bmi>=30?". At higher body weight per-kg needs fall — treat the top as a generous ceiling":"")+((ckd||hf)?". NOTE: fluid may be RESTRICTED in your condition — follow your clinician":"")+".";
+  var caf=preg?200:(lac?300:400);if(age<=18)caf=Math.min(caf,Math.round(3*kg),100);
+  var ca=(age>=9&&age<=18)?1300:(((sex==="female"&&age>=51)||age>=71)?1200:1000);if((preg||lac)&&age<=18)ca=1300;if(bone&&ca<1200)ca=1200;
+  var vd=age>70?800:600;if(bone&&vd<800)vd=800;
+  var iron=preg?27:(lac?(age<=18?10:9):((age>=14&&age<=18)?(sex==="female"?15:11):((sex==="female"&&age<51)?18:8)));
+  var ironCard=preg?("27 mg — routinely supplemented in pregnancy (most prenatals contain it)"+(plant?"; aim ~1.8× from plants + vitamin C":"")):("supplement only a documented deficiency"+(plant?(" — ×1.8 on a plant diet (~"+Math.round(iron*1.8)+" mg), pair with vitamin C"):""));
+  var folate=preg?600:(lac?500:400),b12=preg?2.6:(lac?2.8:2.4),iod=preg?220:(lac?290:150);
+  var kAI=preg?(age<=18?2600:2900):(lac?(age<=18?2500:2800):(sex==="male"?(age<=18?3000:3400):(age<=18?2300:2600)));
+  var dhaAdd=(preg||lac)?" plus +200–300 mg DHA":"";
+  // ---- full DRI panel (NIH ODS RDAs/AIs; teen 14–18 values where they differ) ----
+  var teen=age<=18;
+  var mg=preg?(teen?400:(age<=30?350:360)):(lac?(teen?360:(age<=30?310:320)):(sex==="male"?(teen?410:(age<=30?400:420)):(teen?360:(age<=30?310:320))));
+  var zn=preg?(teen?12:11):(lac?(teen?13:12):(sex==="male"?11:(teen?9:8)));
+  var vja=preg?(teen?750:770):(lac?(teen?1200:1300):(sex==="male"?900:700));
+  var vc=(preg?(teen?80:85):(lac?(teen?115:120):(sex==="male"?(teen?75:90):(teen?65:75))))+(smoke?35:0);
+  var ve=lac?19:15;
+  var vk=sex==="male"&&!preg&&!lac?(teen?75:120):(teen?75:90);
+  var se=preg?60:(lac?70:55);
+  var b1=(preg||lac)?1.4:(sex==="male"?1.2:(teen?1.0:1.1));
+  var b2=preg?1.4:(lac?1.6:(sex==="male"?1.3:(teen?1.0:1.1)));
+  var b3=preg?18:(lac?17:(sex==="male"?16:14));
+  var b6=preg?1.9:(lac?2.0:(teen?(sex==="male"?1.3:1.2):(age>=51?(sex==="male"?1.7:1.5):1.3)));
+  var cu=preg?1000:(lac?1300:(teen?890:900));
+  var phos=teen?1250:700;
+  var ala=preg?1.4:(lac?1.3:(sex==="male"?1.6:1.1));
+  var choln=preg?450:(lac?550:(teen?(sex==="male"?550:400):(sex==="female"?425:550)));
+  var transg=Math.max(1,Math.round(0.01*goalCal/9));
+  var wgOz=Math.max(3,Math.round(goalCal*3/2000));
+  var h="",lh="",fh="";
+  var calLo=Math.round(goalCal*0.9/10)*10,calHi=Math.round(goalCal*1.1/10)*10;
+  h+=card("Calories",goalCal+' kcal/day <span class="hdc-band">±~10% &middot; likely '+calLo+'&ndash;'+calHi+'</span>',calNote);
+  h+=card("Protein",rng(Math.round(pLo),Math.round(pHi))+" g/day","~"+rng(perLo,perHi)+" g per meal across ~"+meals+" meals (≥~0.4 g/kg/meal helps muscle synthesis) — "+pn+". For longevity, make plant proteins (beans, lentils, soy, nuts) the base and prefer fish & poultry over red and processed meat — plant protein tracks with lower mortality.");
+  h+=card("Carbohydrate",carbLo+"–"+carbHi+" g/day","the remainder after protein & fat — your main flex lever (more carbs if you eat less fat or train hard; fewer if insulin-resistant)"+((carbHi<70)?". Low here because protein + essential fat nearly fill this calorie level — normal on an aggressive cut":"")+".");
+  h+=card("Total fat",fatMin+"–"+fatHi+" g/day","from a ~0.8 g/kg essential floor (~"+fatMin+" g) up to ~35% of calories; mostly unsaturated. Fat and carbs trade off.");
+  h+=card("Omega-3 (EPA+DHA)","250–500 mg/day",((fishA||plant)?"no fish → algal oil":"oily fish 2×/wk or algal oil")+dhaAdd+(ldl?" — with established heart disease, ~1,000 mg/day is reasonable (AHA)":"")+".");
+  h+=card("Omega-3 (ALA)",ala+" g/day","the plant omega-3 (AI): walnuts, chia, flax, canola"+(plant?" — extra important plant-based; conversion to EPA/DHA is inefficient, so consider algal oil too":"")+".");
+  h+=card("Fiber","~"+fiber+" g/day","14 g per 1,000 kcal, with a 25 g floor; 25–29 g is the sweet spot for lowest disease risk (Reynolds, Lancet 2019) and benefit keeps rising toward ~35 g — bigger/very active eaters aim the upper end; ramp +5 g/week"+(ibs?" — but if IBS is flaring, trial low-FODMAP first":"")+".");
+  var sugNote=sugarPct===0.05?"tightened to <5% of energy for diabetes/fatty liver (WHO)":(sugAHAbind?("the AHA cap for "+((age<=18)?"under-19s":(sex==="female"?"women":"men"))+" ("+sugAHA+" g) — below the WHO/DGA <10%-of-energy line"):"WHO/DGA <10% of energy; ideal <5%");
+  lh+=card("Added sugar","< "+sug+" g/day",sugNote+". Healthiest is ≤25 g for everyone (there's no benefit to any added sugar); sugary drinks add up fastest, so keep them near zero. Whole fruit doesn't count.");
+  lh+=card("Saturated fat","< "+satg+" g/day",(satPct===0.06?"tightened to <6% of energy for high LDL / heart disease / diabetes":"<10% of energy is the ceiling; healthiest is ~7% (≈"+satOpt+" g) — lower means fewer heart-disease events (dose-response, Cochrane 2020)")+". The benefit only holds if you replace it with unsaturated fats (olive oil, nuts, fish) or whole grains — not refined carbs or sugar.");
+  lh+=card("Trans fat","< "+transg+" g/day — aim 0","WHO: <1% of energy, as close to zero as possible; check labels for 'partially hydrogenated'.");
+  lh+=card("Dietary cholesterol",(ldl?"< 200 mg/day":"< 300 mg/day"),(ldl?"tightened for high LDL — ":"no formal US limit since 2015; keep low — ")+"it travels with saturated fat; eggs in moderation are fine for most.");
+  lh+=card("Sodium","< "+sodium+" mg/day",sodNote+". Athletes lose 0.5–1.5 g/L sweat.");
+  fh+=card("Vegetables &amp; fruit","400 → "+prodHi+" g/day","400 g is the floor; ~800 g/day is the point of maximum risk reduction (Aune 2017) — a stretch target, and any increase toward it helps. Scaled to your "+goalCal+" kcal; variety over count.");
+  fh+=card("Whole grains","≥ "+wgOz+" oz-eq/day","at least half your grains whole (DGA); ~90 g/day (≈3 oz-eq) is where risk reduction is greatest — oats, brown rice, whole-wheat, quinoa; 1 oz-eq ≈ 1 slice bread or ½ cup cooked"+(glutenf?". GF: oats (certified), brown rice, quinoa, buckwheat, millet":"")+".");
+  if(!fishA&&!plant)fh+=card("Fish &amp; seafood","2–3 servings/wk","8–12 oz weekly, favoring oily fish (salmon, sardines, trout); 2–4/wk is optimal — beyond ~5/wk adds no benefit and raises mercury exposure"+(preg?" — pregnancy: low-mercury choices only; skip shark/swordfish/king mackerel/tilefish":"")+".");
+  fh+=card("Legumes, nuts &amp; seeds",(nutA?"legumes ~1.5+ cup/wk":"~1.5+ cup legumes + ~5 oz nuts/wk"),"beans, lentils, chickpeas"+(nutA?" (nut allergy → seeds: pumpkin, sunflower, chia)":", plus a small daily handful of nuts/seeds")+" — protein, fiber, minerals.");
+  if(!plant)fh+=card("Red &amp; processed meat","red ~350 (≤500) g/wk · processed ~0","healthiest is ~350 g/wk cooked (≈3 palm-size portions); 500 g is the ceiling (WCRF). Processed meat (bacon, sausage, deli) has no safe level (IARC Group 1) — keep near zero. Ultra-processed foods overall track with higher mortality, so favor whole/minimally-processed"+(gout?" — gout: organ meats and game are the highest-purine, limit red meat tightly":"")+".");
+  h+=card("Water (drinks)",wlo.toFixed(1)+"–"+whi.toFixed(1)+" L/day",waterNote);
+  lh+=card("Caffeine","≤ "+caf+" mg/day",preg?"pregnancy ≤200 mg (ACOG).":(lac?"breastfeeding ~300 mg (CDC); some advise ≤200, and less for a preterm or newborn baby.":(age<=18?"teens (through 18): AAP caps ~100 mg and discourages caffeine — skip energy drinks.":"≤400 mg (~4 cups); less if sensitive.")));
+  var zeroAlc=preg||lac||minor||nafld;
+  lh+=card("Alcohol",zeroAlc?"0 drinks/day":("0 best — ≤ "+(sex==="male"?"2":"1")+"/day"),
+   (preg?"zero in pregnancy — no safe amount.":(lac?"safest is zero while breastfeeding (or time a single drink ≥2 h before nursing).":(minor?"zero under 21.":(nafld?"zero with fatty liver — alcohol drives it.":(gout?"raises urate — beer & spirits are the worst triggers; if any, keep rare.":(hbp?"raises blood pressure — less is better.":"none is healthiest (WHO); 1 drink = 14 g alcohol.")))))));
+  if(hasBF){
+   var lbmD=us?Math.round(lbm/0.453592):Math.round(lbm),fmD=us?Math.round(fatMass/0.453592):Math.round(fatMass),wu2=us?"lb":"kg";
+   var fr=sex==="male"?"healthy ~10–20% (athletic 6–13%)":"healthy ~18–28% (athletic 14–20%)";
+   var bfcat=sex==="male"?(bf<6?"very low":bf<14?"athletic":bf<18?"fit":bf<25?"healthy":"high"):(bf<14?"very low":bf<21?"athletic":bf<25?"fit":bf<32?"healthy":"high");
+   h+=card("Body composition",bf+"% fat — "+bfcat,"lean mass "+lbmD+" "+wu2+", fat mass "+fmD+" "+wu2+". Target band: "+fr+". Protein is dosed on lean mass."+(bfSrc?" Body fat"+bfSrc+".":""));
+  } else {
+   var hwloD=us?Math.round(18.5*m*m/0.453592):Math.round(18.5*m*m),hwhiD=us?Math.round(24.9*m*m/0.453592):Math.round(24.9*m*m),wu=us?"lb":"kg";
+   var cat=bmi<18.5?"underweight":bmi<25?"healthy":bmi<30?"overweight":bmi<35?"obesity I":bmi<40?"obesity II":"obesity III";
+   var asian=bmi>=27.5?" — ≥27.5 high-risk (Asian cut-points)":(bmi>=23?" — ≥23 increased-risk (Asian)":"");
+   h+=card("BMI",bmi.toFixed(1)+" — "+cat,"healthy range ≈ "+hwloD+"–"+hwhiD+" "+wu+" for your height"+asian+". A screen, not body fat — add body-fat % (or use the tape estimator below) for a sharper read.");
+  }
+  var vh="";
+  vh+=card("Vitamin A",vja+" mcg RAE","sweet potato, carrots, greens"+(plant?" (as beta-carotene — eat colorful)":", dairy, eggs")+(preg?"; pregnancy: cap preformed retinol <3,000 mcg — no liver or high-dose retinol supplements":"")+(smoke?"; smokers: do NOT take beta-carotene supplements (raise lung-cancer risk)":"")+".");
+  vh+=card("Vitamin C",vc+" mg/day","peppers, citrus, berries, broccoli"+(smoke?" — includes +35 mg because smoking depletes it":"")+"; boosts plant-iron absorption.");
+  vh+=card("Vitamin D",vd+" IU/day","1,000–2,000 IU to correct a low level; sun/skin/latitude drive it more than diet.");
+  vh+=card("Vitamin E",ve+" mg/day",(nutA?"seeds, plant oils, avocado, greens (nut-free sources)":"nuts, seeds, plant oils, avocado")+"; food only — high-dose supplements don't help.");
+  vh+=card("Vitamin K",vk+" mcg/day","leafy greens, broccoli, natto; on warfarin keep intake CONSISTENT — don't avoid greens.");
+  vh+=card("Thiamin (B1)",b1.toFixed(1)+" mg/day","whole grains, pork, beans, fortified grains; alcohol depletes it.");
+  vh+=card("Riboflavin (B2)",b2.toFixed(1)+" mg/day","dairy, eggs, almonds, fortified grains"+(plant?" — one to watch plant-based (nutritional yeast helps)":"")+".");
+  vh+=card("Niacin (B3)",b3+" mg NE","meat, fish, peanuts, fortified grains; food only — high-dose supplements stress the liver.");
+  vh+=card("Vitamin B6",b6.toFixed(1)+" mg/day","chickpeas, fish, potatoes, bananas"+(age>=51?" — needs rise after 50":"")+".");
+  vh+=card("Folate",folate+" mcg DFE","400+ mcg folic acid before & in early pregnancy — that window is DAILY and non-negotiable (neural-tube defects form by wk 4); otherwise stores buffer it for weeks.",((preg||(sex==="female"&&age>=14&&age<51))?"day":"mday"));
+  vh+=card("Vitamin B12",b12+" mcg/day",plant?"plant diet → 50–100 mcg/day or 1,000–2,000 mcg twice weekly (essential).":"animal foods cover it; supplement if >50 or on metformin/PPI.");
+  vh+=card("Choline",choln+" mg/day","eggs, soy, fish, cruciferous veg; commonly under-eaten"+(preg?" — important in pregnancy.":(lac?" — needs rise during lactation.":".")));
+  var nh="";
+  nh+=card("Calcium",ca+" mg/day",(dairyfEff?("no dairy → fortified plant milk, calcium-set tofu, low-oxalate greens (kale, bok choy, broccoli)"+(plant?"; ":", tinned fish; ")):"")+"food first, ≤500 mg/dose.");
+  nh+=card("Iron",iron+" mg/day",ironCard+".");
+  nh+=card("Magnesium",mg+" mg/day","nuts, seeds, beans, whole grains, greens — half of adults under-eat it"+(gerd?"; long-term PPIs can deplete it (FDA warning)":"")+(t2d?"; low magnesium worsens insulin resistance":"")+". Supplements: ≤350 mg/dose.");
+  nh+=card("Zinc",zn+" mg/day",(plant?("plant-based: aim ~1.5× (~"+Math.round(zn*1.5)+" mg) — phytates cut absorption; "):"")+"oysters, meat, beans, pumpkin seeds; don't chronically exceed ~40 mg.");
+  nh+=card("Iodine",iod+" mcg/day","iodized salt or a supplement"+(plant?" — plant-based diets are often low":"")+".");
+  nh+=card("Selenium",se+" mcg/day",(nutA?"fish, meat, eggs, whole grains":"1–2 Brazil nuts cover a day; fish, meat, whole grains")+" — don't mega-dose (UL 400).");
+  nh+=card("Copper",cu+" mcg/day","shellfish, nuts, seeds, beans, dark chocolate; high-dose zinc blocks it.");
+  nh+=card("Phosphorus",ckd?"clinician-set":(phos+" mg/day"),ckd?"CKD: typically ~800–1,000 mg with phosphate ADDITIVES cut first (colas, processed foods) ⚕.":"any protein-adequate diet covers it; deficiency is rare.",(ckd?"day":"month"));
+  nh+=card("Potassium",kAI+"+ mg/day",ckd?"CKD: may need RESTRICTING — clinician-set; avoid KCl salt.":"from produce; ≥3,500 mg aids BP.");
+  var cond=[];
+  if(hbp)cond.push("<strong>High blood pressure:</strong> DASH pattern; sodium <1,500 mg; potassium 3,500–5,000 mg from produce (unless CKD); limit alcohol — up to ~−11/−5 mmHg in hypertensives on controlled feeding, smaller if normotensive or free-living (§06/§09).");
+  if(t2d)cond.push("<strong>Type 2 diabetes / prediabetes:</strong> carbs at the lower end, low glycemic load, high fiber, even distribution; if overweight, sustained loss drives remission — ~50% at ≥10–15 kg, up to ~80% only at ≥15 kg / ≥10% body weight; added sugar <5% (§09).");
+  if(ldl)cond.push("<strong>High LDL / heart disease:</strong> saturated fat <6% ("+Math.round(0.06*goalCal/9)+" g), 5–10 g/day soluble fiber (oats, beans, psyllium), plant sterols ~2 g; replace saturated fat with olive oil/nuts/fish (§09/§14).");
+  if(ckd)cond.push("<strong>Kidney disease (CKD):</strong> protein ~0.6–0.8 g/kg <em>if not on dialysis</em> — on dialysis the target REVERSES to ~1.0–1.2 g/kg (KDIGO); sodium <2,000 mg, potassium/phosphate INDIVIDUALISED — avoid potassium salt substitutes; renal-dietitian territory (§09).");
+  if(gout)cond.push("<strong>Gout:</strong> limit purine-rich meat/organ/shellfish, beer & spirits, and high-fructose drinks; lose weight if overweight; coffee, low-fat dairy and cherries may help; urate target <6 mg/dL (drug-driven) (§09).");
+  if(ibs)cond.push("<strong>IBS:</strong> a dietitian-led low-FODMAP trial (4–8 weeks) then systematic reintroduction — not permanent restriction; ~50–80% respond (§09).");
+  if(nafld)cond.push("<strong>Fatty liver (NAFLD):</strong> lose ≥7–10% of body weight, cut added sugar/fructose and refined carbs, Mediterranean pattern, minimal alcohol (§09).");
+  if(bone)cond.push("<strong>Osteoporosis:</strong> calcium 1,200 mg + vitamin D 800–1,000 IU (food first), adequate protein, and weight-bearing/resistance exercise (§09).");
+  if(gerd)cond.push("<strong>GERD / reflux:</strong> lose weight if overweight, no meals within 2–3 h of lying down, raise the head of the bed; test your own triggers (alcohol, coffee, chocolate, mint, fatty/fried, citrus, tomato) with a 2–4-week eliminate-then-rechallenge (§09).");
+  if(hf)cond.push("<strong>Heart failure:</strong> avoid EXCESSIVE sodium (~2–3 g, not necessarily <1.5 g), with fluid limits and daily weights per your clinician (§09).");
+  if(glp1)cond.push("<strong>On a GLP-1 / weight-loss medication:</strong> protein is critical — up to ~25–40% of the weight lost can be lean mass, so hit the HIGH end of your protein target and do resistance training; appetite suppression makes protein, fiber, fluid and micronutrients hard to reach, so prioritize them; weight tends to return if you stop (§10/§12).");
+  var rest=[];
+  if(vegan)rest.push("<strong>Vegan:</strong> B12 is non-negotiable; also algal DHA/EPA 250–300 mg, iodine 150 mcg, vitamin D, calcium 1,000–1,200 mg (fortified plant milk, calcium-set tofu, low-oxalate greens — kale, bok choy, broccoli), zinc, and iron ×1.8 with vitamin C. Combine legumes + grains + soy/nuts/seeds for complete protein.");
+  else if(rveg)rest.push("<strong>Vegetarian:</strong> watch B12, iron (×1.8 + vitamin C), zinc, and omega-3 (eggs/dairy + algal oil); eggs and dairy make hitting protein easy.");
+  if(dairyf)rest.push("<strong>Dairy-free / lactose:</strong> hit calcium ("+ca+" mg) via fortified plant milk/yogurt, calcium-set tofu, leafy greens, tinned fish; many tolerate hard cheese/yogurt or lactose-free dairy. Check vitamin D and B12.");
+  if(glutenf)rest.push("<strong>Gluten-free / celiac:</strong> strict, lifelong avoidance (celiac); build whole grains from GF oats, brown rice, quinoa, buckwheat, millet; watch fiber, iron, folate and B-vitamins — many GF products are refined and lower in them.");
+  if(nutA)rest.push("<strong>Nut allergy:</strong> get healthy fats from olive oil, avocado, and seeds (sunflower, pumpkin, chia, flax); protein from "+(vegan?"legumes, soy, seeds":(rveg?"legumes, soy, eggs, dairy":"legumes, soy, eggs, dairy, fish/meat"))+".");
+  if(fishA)rest.push("<strong>Fish / shellfish allergy:</strong> skip fish entirely; get omega-3 from an ALGAL oil (250–500 mg EPA+DHA) plus ALA from flax/chia/walnuts.");
+  if(eggA)rest.push("<strong>Egg allergy:</strong> protein from "+(vegan?"legumes, soy, seeds, whole grains":(rveg?"legumes, dairy, soy":"legumes, dairy, soy, fish/meat"))+"; use flax/chia 'eggs' or commercial replacers for baking.");
+  if(soyA)rest.push("<strong>Soy allergy:</strong> protein from other legumes (lentils, chickpeas, beans)"+(vegan?", seeds, whole grains":(rveg?", dairy, eggs":", dairy, eggs, fish/meat"))+"; check labels on meat-alternatives and sauces.");
+  if(sesA)rest.push("<strong>Sesame allergy:</strong> a mandatory-labeled US allergen since 2023 (FASTER Act) — read the ingredient / 'Contains' line (sesame hides in tahini, hummus, halva, baba ganoush, some breads and spice blends); get fats and protein from olive oil, avocado, and sunflower/pumpkin seeds (safe unless you separately react to them).");
+  var fl=[];
+  if(preg)fl.push("Pregnancy: folate 600 mcg (400+ preconception), iron 27 mg, iodine 220 mcg, choline 450 mg, DHA 200 mg; avoid alcohol, high-mercury fish, raw/unpasteurised. Total weight gain by pre-pregnancy BMI (IOM): underweight 28–40 lb, normal 25–35, overweight 15–25, obese 11–20 lb (§16/§19).");
+  if(older)fl.push("Older adult: hold protein at the top of the range with resistance training, split over ~3 meals (~0.4 g/kg each); check B12 and vitamin D (§16).");
+  var warn=[];
+  if(safety)warn.push(safety);
+  if(preg&&ckd)warn.push("⚕ Pregnancy WITH kidney disease: protein needs RISE in pregnancy but CKD usually restricts — these conflict and must be reconciled by your obstetric and renal team. Do not self-set protein.");
+  if(ckd&&!preg)warn.push("⚕ Kidney disease: protein, sodium, potassium and phosphate must be individualised with your nephrology team — treat every number here as a discussion point, not a prescription.");
+  if(hf)warn.push("⚕ Heart failure: sodium and fluid targets must be set by your clinician.");
+  var ncond=(hbp?1:0)+(t2d?1:0)+(ldl?1:0)+(ckd?1:0)+(gout?1:0)+(ibs?1:0)+(nafld?1:0)+(bone?1:0)+(gerd?1:0)+(hf?1:0);
+  if(ncond>=3)warn.push("You've selected several interacting conditions — a registered dietitian should reconcile these targets for you.");
+  var warnHtml=warn.length?('<div class="hdc-warn">⚠ '+warn.join('</div><div class="hdc-warn">⚠ ')+'</div>'):"";
+  out.innerHTML=warnHtml
+   +'<p class="hdc-hint hdc-hzleg">Each target carries a <strong>time-horizon badge</strong> &mdash; the timescale it&rsquo;s genuinely best judged over. Your body buffers most nutrients, so the goal is to hit them <em>on average</em> across that window, not perfectly every day. Hover a badge for the reason. <span class="hdc-hzk"><span class="hdc-hz hz-meal">per meal</span> <span class="hdc-hz hz-day">daily</span> <span class="hdc-hz hz-day">few-day avg</span> <span class="hdc-hz hz-week">weekly average</span> <span class="hdc-hz hz-month">monthly+</span></span></p>'
+   +'<div class="hdc-sub">Energy, macros &amp; hydration</div><div class="hdc-grid">'+h+'</div>'
+   +'<div class="hdc-sub">Limits &mdash; ceilings, not targets</div><div class="hdc-grid">'+lh+'</div>'
+   +'<div class="hdc-sub">Food-group targets</div><div class="hdc-grid">'+fh+'</div>'
+   +'<details class="hdc-more"><summary>Vitamins &amp; minerals &mdash; tap to show all 21 (your body buffers these over weeks, so you don&rsquo;t track them daily)</summary>'
+   +'<div class="hdc-sub">Vitamins (food first)</div><div class="hdc-grid">'+vh+'</div>'
+   +'<div class="hdc-sub">Minerals (food first)</div><div class="hdc-grid">'+nh+'</div></details>'
+   +'<p class="hdc-hint" style="margin-top:6px">Also accounted for: pantothenic acid (B5), biotin, manganese, chromium and molybdenum — any reasonably varied diet meets these, so they aren\'t shown as targets to track.</p>'
+   +block("hdc-cond","Condition & medication adjustments",cond)
+   +block("hdc-cond","Allergy / restriction adjustments",rest)
+   +block("hdc-flags","Also for you",fl)
+   +'<p class="hdc-disc">A near-optimal <em>target set</em> — not a validated meal plan or medical advice (see §21). Accuracy is bounded by your inputs (body-fat % and exercise kcal are estimates) and by individual variation no calculator can see — which the refiner below corrects. Multiple/severe conditions, pregnancy complications, or any eating-disorder history → work with a doctor or registered dietitian. Math: Mifflin–St Jeor / Katch–McArdle; US-Navy body fat; DGA 2025–2030; WHO; NIH ODS; AHA/ACC; KDIGO.</p>';
+  renderRefine(formulaTDEE,prov.cal,m);
+ }
+ function renderRefine(formulaTDEE,assumedIntake,mHeight){
+  var el=g("hdc-refine");if(!el)return;
+  var db=loadDB(),w=(db.wlog||[]).slice().sort(function(a,b){return a.t-b.t;});
+  var us=g("hdc-units").value==="us",wu=us?"lb":"kg",h="";
+  if(w.length){
+   var rows=w.slice(-8).map(function(e){var d=new Date(e.t),kgd=us?(e.kg/0.453592):e.kg;return (d.getMonth()+1)+"/"+d.getDate()+": "+kgd.toFixed(1);}).join(" · ");
+   h+='<p class="hdc-n"><strong>Weight log ('+w.length+', '+wu+'):</strong> '+(w.length>8?"… ":"")+rows+'</p>';
+   var c=calibration(assumedIntake,formulaTDEE);
+   if(c&&c.tdee){
+    h+='<div class="hdc-cond"><strong>✓ Calibrated from your data — your targets above now use this.</strong><ul>'
+     +'<li>Measured maintenance ≈ <b>'+c.tdee+' kcal/day</b> (the formula guessed '+Math.round(formulaTDEE)+'). Your weight is trending <b>'+c.trendWk.toFixed(2)+' kg/week</b> over '+c.days+' days.</li>'
+     +'<li>Intake used: '+c.intake+' kcal/day ('+c.src+'). Enter your real average intake above for a sharper number.</li></ul></div>';
+   } else if(c){
+    h+='<p class="hdc-n">Trend so far: <b>'+c.trendWk.toFixed(2)+' kg/week</b> over '+c.days+' days. Add your average daily calories above and the engine will back-calculate your true maintenance.</p>';
+   } else {
+    h+='<p class="hdc-n">Log at least 2 weigh-ins spanning ≥10 days (weekly is fine) and your measured maintenance calories will appear here and replace the estimate.</p>';
+   }
+   if(mHeight&&w.length){var lastKg=w[w.length-1].kg,bmiNow=lastKg/(mHeight*mHeight);if(bmiNow<18.5)h+='<div class="hdc-warn">⚠ Your latest weigh-in is BMI '+bmiNow.toFixed(1)+' (underweight). Switch off fat-loss and consider maintenance/gain — and a professional if this is unintended or distressing.</div>';}
+  } else {
+   h+='<p class="hdc-n">No weigh-ins yet. Log weekly; after ~2 weeks the engine swaps the formula estimate for your <em>measured</em> maintenance. Use a 7-day rhythm — day-to-day swings of 1–2 kg are just water, glycogen and salt, not fat.</p>';
+  }
+  var hun=g("rf-hunger").value,en=g("rf-energy").value,adh=g("rf-adh").value,goal=g("hdc-goal").value,tips=[];
+  if(adh==="No")tips.push("Targets only work when you hit them — fix consistency before changing any number.");
+  if(en==="Low"&&goal==="lose")tips.push("Low energy in a deficit → ease to a smaller deficit, keep protein high, and check sleep before cutting further.");
+  if(hun==="High"&&goal==="lose")tips.push("High hunger → lean on protein, fiber and high-volume foods; a smaller, slower deficit is more sustainable.");
+  if(en==="High"&&hun!=="High"&&adh==="Yes")tips.push("Energy good, hunger manageable, adherence on — stay the course and let the weight trend guide any change.");
+  if(tips.length)h+=block("hdc-flags","Check-in read",tips);
+  el.innerHTML=h;
+ }
+ function logWeight(){var v=num(g("rf-weight").value);if(!v)return;var us=g("hdc-units").value==="us",kg=us?v*0.453592:v;var db=loadDB();if(!db.wlog)db.wlog=[];db.wlog.push({t:Date.now(),kg:Math.round(kg*10)/10});saveDB(db);g("rf-weight").value="";calc();}
+ function clearData(){if(typeof confirm==="function"&&!confirm("Clear all data saved on this device?"))return;saveDB({});calc();}
+ var BFCARDS={male:[{v:8,d:"Clear ab separation, visible vascularity"},{v:12,d:"Abs visible, some arm vascularity"},{v:15,d:"Abs faintly visible, defined but soft"},{v:18,d:"Little definition, fairly flat stomach"},{v:22,d:"No ab definition, some midsection softness"},{v:28,d:"Noticeable belly, rounder waist"},{v:34,d:"Fuller waist, pronounced love handles"}],female:[{v:16,d:"Abs visible, athletic (near the healthy floor)"},{v:20,d:"Some ab definition, athletic"},{v:24,d:"Firm, little definition, healthy"},{v:28,d:"Soft curves, no ab definition"},{v:33,d:"Rounder hips/waist, softer midsection"},{v:38,d:"Fuller waist and limbs"},{v:43,d:"Notably fuller throughout"}]};
+ function renderBFVisual(){var host=g("hdc-bf-visual");if(!host)return;var sx=g("hdc-sex").value==="female"?"female":"male";if(host.getAttribute&&host.getAttribute("data-sex")===sx)return;var arr=BFCARDS[sx],h="",i;for(i=0;i<arr.length;i++)h+='<button type="button" class="hdc-bfcard" data-bf="'+arr[i].v+'"><b>~'+arr[i].v+'%</b><span>'+arr[i].d+'</span></button>';host.innerHTML=h;if(host.setAttribute)host.setAttribute("data-sex",sx);}
+ function bfTape(){var out=g("bft-out"),us=g("hdc-units").value==="us",sx=g("hdc-sex").value;var nk=num(g("bft-neck").value),ws=num(g("bft-waist").value),hp=num(g("bft-hip").value);if(us){nk*=2.54;ws*=2.54;hp*=2.54;}var cm=us?(num(g("hdc-h-ft").value)*12+num(g("hdc-h-in").value))*2.54:num(g("hdc-h-cm").value);if(!cm||!nk||!ws||(sx==="female"&&!hp)){out.textContent="Enter your height above, plus neck, waist"+(sx==="female"?", and hips.":".");return;}var bf=navyBF(sx,cm,nk,ws,hp);if(!bf){out.textContent="Those measurements don’t compute — double-check them (waist should exceed neck).";return;}g("hdc-bf").value=bf;out.textContent="Estimated body fat ≈ "+bf+"% — applied above.";calc();}
+ function bfReadImg(file){return new Promise(function(res,rej){var r=new FileReader();r.onload=function(){res(r.result);};r.onerror=rej;r.readAsDataURL(file);});}
+ function bfPhoto(){var out=g("bfp-out"),url=g("bfp-url").value.trim(),model=g("bfp-model").value.trim(),key=g("bfp-key").value.trim();var front=g("bfp-front").files[0],side=g("bfp-side").files[0];if(!url||!model){out.textContent="Enter a vision API endpoint and model first.";return;}if(!front){out.textContent="Add at least a front photo.";return;}out.textContent="Uploading to the AI service and estimating…";var jobs=[bfReadImg(front)];if(side)jobs.push(bfReadImg(side));Promise.all(jobs).then(function(imgs){var content=[{type:"text",text:"You are helping a fitness calculator. From the photo(s), give your single best estimate of the person’s body-fat PERCENTAGE. Reply with ONLY a number, e.g. 22. If you truly cannot tell, reply exactly: unknown."}],i;for(i=0;i<imgs.length;i++)content.push({type:"image_url",image_url:{url:imgs[i]}});return fetch(url,{method:"POST",headers:{"Content-Type":"application/json","Authorization":"Bearer "+key},body:JSON.stringify({model:model,max_tokens:50,temperature:0,messages:[{role:"user",content:content}]})});}).then(function(r){return r.json();}).then(function(j){var t=(j&&j.choices&&j.choices[0]&&j.choices[0].message&&j.choices[0].message.content)||"";var mm=(""+t).match(/\d+\.?\d*/);if(/unknown/i.test(t)||!mm){out.textContent="The AI couldn’t give a usable number"+(t?(" (it said: "+((""+t).slice(0,80))+")"):"")+". Try the tape method instead.";return;}var v=Math.round(parseFloat(mm[0]));if(v<3||v>60){out.textContent="The AI returned "+v+"%, which is out of range — use the tape method instead.";return;}g("hdc-bf").value=v;out.textContent="AI estimate ≈ "+v+"% — applied above. Unvalidated; verify with the tape method.";calc();}).catch(function(e){out.textContent="Request failed ("+((e&&e.message)||e)+"). Check the endpoint, model, and key.";});}
+ var _bfv=g("hdc-bf-visual");if(_bfv&&_bfv.addEventListener)_bfv.addEventListener("click",function(e){var b=e.target&&e.target.closest?e.target.closest(".hdc-bfcard"):null;if(!b)return;var cs=_bfv.querySelectorAll(".hdc-bfcard"),i;for(i=0;i<cs.length;i++)cs[i].className="hdc-bfcard";b.className="hdc-bfcard sel";g("hdc-bf").value=b.getAttribute("data-bf");calc();});
+ var _btc=g("bft-calc");if(_btc&&_btc.addEventListener)_btc.addEventListener("click",bfTape);
+ var _bpc=g("bfp-consent");if(_bpc&&_bpc.addEventListener)_bpc.addEventListener("change",function(){var c=g("bfp-config");if(c)c.style.display=_bpc.checked?"":"none";});
+ var _bpg=g("bfp-go");if(_bpg&&_bpg.addEventListener)_bpg.addEventListener("click",bfPhoto);
+ var _rfl=g("rf-log");if(_rfl)_rfl.addEventListener("click",logWeight);
+ var _rfc=g("rf-clear");if(_rfc)_rfc.addEventListener("click",clearData);
+ var els=document.querySelectorAll(".hdcalc input,.hdcalc select");
+ for(var k=0;k<els.length;k++){els[k].addEventListener("input",calc);els[k].addEventListener("change",calc);}
+ sync();calc();
+ // Apple Health bridge — active only inside the iOS app (where the native side registers the handler).
+ (function(){var hb=g("hdc-health");if(!hb)return;
+  var hasHK=!!(window.webkit&&window.webkit.messageHandlers&&window.webkit.messageHandlers.healthkit);
+  if(!hasHK){hb.style.display="none";return;}
+  function pull(){try{window.webkit.messageHandlers.healthkit.postMessage({action:"read"});}catch(e){}}
+  window.__hkPull=pull;
+  hb.innerHTML='<button type="button" id="hdc-hk-btn" class="rf-btn">&#127822; Connect Apple Health</button> <span class="hdc-hint" style="margin:0">Pull your age, sex, height, weight &amp; calories burned &mdash; you confirm before it&rsquo;s used.</span>';
+  g("hdc-hk-btn").addEventListener("click",function(){g("hdc-hk-btn").textContent="Reading Apple Health…";pull();});
+ })();
+ window.__onHealthData=function(d){d=d||{};var hb=g("hdc-health");if(!hb)return;
+  function setv(id,v){var e=g(id);if(e&&v!=null&&v!=="")e.value=v;}
+  var u=g("hdc-units");if(u)u.value="metric";
+  if(d.sex)setv("hdc-sex",d.sex);
+  setv("hdc-age",d.age);setv("hdc-h-cm",d.heightCm);setv("hdc-w",d.weightKg);
+  var ex=g("hdc-ex");
+  if(ex&&d.activeKcal!=null){ex.value=d.activeKcal;ex.readOnly=true;ex.title="From Apple Health — locked";ex.style.background="#eef6f0";}
+  g("hdc-age").dispatchEvent(new Event("input",{bubbles:true}));
+  var miss=[];if(!d.sex)miss.push("sex");if(d.age==null)miss.push("age");if(d.heightCm==null)miss.push("height");if(d.weightKg==null)miss.push("weight");
+  hb.innerHTML='<div class="hdc-cond" style="background:#f4faf6"><strong>From Apple Health &mdash; review &amp; confirm</strong><ul>'+
+   '<li>Sex: '+(d.sex||"&mdash;")+'</li>'+
+   '<li>Age: '+(d.age!=null?d.age:"&mdash;")+'</li>'+
+   '<li>Height: '+(d.heightCm!=null?d.heightCm+" cm":"&mdash;")+'</li>'+
+   '<li>Weight: '+(d.weightKg!=null?d.weightKg+" kg":"&mdash;")+'</li>'+
+   '<li>Energy burned/day (Apple Health, 7-day avg): '+(d.activeKcal!=null?("<strong>"+d.activeKcal+" kcal</strong> &mdash; used as your activity, not editable"):"&mdash;")+'</li></ul>'+
+   (miss.length?('<p class="hdc-hint">Apple Health didn&rsquo;t have your '+miss.join(", ")+' &mdash; please fill those in below.</p>'):'')+
+   (d.note?('<p class="hdc-hint">'+d.note+'</p>'):'')+
+   '<button type="button" id="hdc-hk-ok" class="rf-btn">Confirm these</button> <button type="button" id="hdc-hk-redo" class="rf-btn rf-clear">Re-sync</button></div>';
+  g("hdc-hk-ok").addEventListener("click",function(){var c=hb.querySelector(".hdc-cond");if(c)c.innerHTML='<strong>&#10003; Confirmed from Apple Health.</strong> Your details and Apple Health&rsquo;s daily burn are set below. <button type="button" id="hdc-hk-redo2" class="rf-btn rf-clear" style="margin-left:8px">Re-sync</button>';var r=g("hdc-hk-redo2");if(r)r.addEventListener("click",function(){if(window.__hkPull)window.__hkPull();});});
+  g("hdc-hk-redo").addEventListener("click",function(){if(window.__hkPull)window.__hkPull();});
+ };
+})();
+
+</script>
+
+<!-- ============ UI controller — drives the engine's real controls ============ -->
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var fire=function(el,t){el.dispatchEvent(new Event(t||'input',{bubbles:true}));};
+
+  /* ---------- option data (mirrors the engine's real <select> values) ---------- */
+  var NEAT=[
+    ['1.25','Mostly sitting','Desk job, driving, mostly seated day'],
+    ['1.45','Lightly active','Some walking and standing through the day'],
+    ['1.7','On your feet most of the day','Nurse, server, retail, teacher'],
+    ['1.9','Physical / manual-labor job','Construction, landscaping, warehouse'],
+    ['2.2','Very heavy labor','Sustained hard physical work all day']
+  ];
+  var GOALS=[
+    ['maintain','Maintain & get healthier','Hold your weight and improve diet quality',true],
+    ['lose','Lose fat','A moderate, sustainable deficit',false],
+    ['gain','Gain muscle','A small surplus alongside training',false],
+    ['recomp','Recomp','Same weight — lose fat, build muscle',false]
+  ];
+  var PACES=[
+    ['gentle','Gentle','About 0.5% of body weight per week',false],
+    ['moderate','Moderate','About 0.75% per week — a good default',true],
+    ['aggressive','Aggressive','Up to 1% per week. Only sensible at higher body fat',false]
+  ];
+  var RESTRICTIONS=[['r-vegan','Vegan'],['r-veg','Vegetarian'],['r-dairy','Dairy-free'],['r-gluten','Gluten-free / celiac'],
+    ['r-nut','Nut allergy'],['r-fish','Fish / shellfish'],['r-egg','Egg allergy'],['r-soy','Soy allergy'],['r-sesame','Sesame allergy']];
+  var CONDITIONS=[['d-hbp','High blood pressure'],['d-t2d','Type 2 diabetes'],['d-ldl','High LDL / heart disease'],
+    ['d-ckd','Kidney disease'],['d-gout','Gout'],['d-ibs','IBS'],['d-nafld','Fatty liver'],['d-bone','Osteoporosis'],
+    ['d-gerd','GERD / reflux'],['d-hf','Heart failure'],['d-glp1','GLP-1 medication']];
+
+  /* ---------- build option cards + chips ---------- */
+  function optCard(v,t,d,rec){
+    return '<button type="button" class="opt'+(rec?' rec':'')+'" data-v="'+v+'" aria-pressed="false">'+
+      '<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M20 6 9 17l-5-5"/></svg></span>'+
+      '<span><span class="t">'+t+'</span><span class="d">'+d+'</span></span></button>';
+  }
+  function fillOpts(host,rows,sel){
+    host.innerHTML=rows.map(function(r){return optCard(r[0],r[1],r[2],r[3]);}).join('');
+    host.addEventListener('click',function(e){
+      var b=e.target.closest('.opt'); if(!b)return;
+      var t=$(sel); t.value=b.dataset.v; fire(t,'change'); fire(t,'input');
+      paint(host,t.value);
+    });
+    paint(host,$(sel).value);
+  }
+  function paint(host,val){
+    host.querySelectorAll('.opt').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===val));});
+  }
+  fillOpts($('opt-neat'),NEAT,'hdc-neat');
+  fillOpts($('opt-goal'),GOALS,'hdc-goal');
+  fillOpts($('opt-pace'),PACES,'hdc-pace');
+
+  function fillChips(host,rows){
+    host.innerHTML=rows.map(function(r){return '<button type="button" class="chip" data-cb="'+r[0]+'" aria-pressed="false">'+r[1]+'</button>';}).join('');
+  }
+  fillChips($('chips-r'),RESTRICTIONS);
+  fillChips($('chips-d'),CONDITIONS);
+
+  document.addEventListener('click',function(e){
+    var c=e.target.closest('.chip[data-cb]'); if(!c)return;
+    var cb=$(c.dataset.cb); if(!cb)return;
+    cb.checked=!cb.checked; fire(cb,'change'); fire(cb,'input');
+    c.setAttribute('aria-pressed',String(cb.checked));
+    syncConditional();
+  });
+
+  /* ---------- segmented controls ---------- */
+  function seg(host,sel,after){
+    host.addEventListener('click',function(e){
+      var b=e.target.closest('button[data-v]'); if(!b)return;
+      var t=$(sel); t.value=b.dataset.v; fire(t,'change'); fire(t,'input');
+      host.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
+      if(after)after();
+    });
+    var v=$(sel).value;
+    host.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.v===v));});
+  }
+  seg($('seg-sex'),'hdc-sex',function(){syncConditional();});
+  seg($('seg-units'),'hdc-units',function(){syncUnits();});
+  seg($('seg-tri'),'hdc-tri');
+
+  function syncUnits(){
+    var us=$('hdc-units').value==='us';
+    $('wrap-cm').hidden=us; $('wrap-ftin').hidden=!us;
+    $('wunit').textContent=us?'lb':'kg';
+    document.querySelectorAll('.bft-u').forEach(function(e){e.textContent=us?'in':'cm';});
+  }
+  function syncConditional(){
+    var fem=$('hdc-sex').value==='female';
+    $('life-female').hidden=!fem;
+    $('wrap-tri').hidden=!(fem&&$('hdc-preg').checked);
+    document.querySelectorAll('.bft-hiponly').forEach(function(e){e.style.display=fem?'':'none';});
+    var hw=$('bft-hipwrap'); if(hw)hw.style.display=fem?'':'none';
+  }
+
+  /* ---------- step flow ---------- */
+  var order=['welcome','basics','body','activity','workouts','goal','pace','reveal','life','diet','health'];
+  var i=0;
+  var stepEls={}; document.querySelectorAll('.step').forEach(function(s){stepEls[s.dataset.step]=s;});
+
+  function shown(name){
+    if(name==='pace'){
+      var g=$('hdc-goal').value, age=parseFloat($('hdc-age').value);
+      if(g!=='lose'&&g!=='gain')return false;
+      if(age>0&&age<18)return false;
+    }
+    if(name==='life'&&$('hdc-sex').value!=='female'){ return true; } // smoker still lives here
+    return true;
+  }
+  function valid(name){
+    if(name==='basics')return parseFloat($('hdc-age').value)>0;
+    if(name==='body'){
+      var us=$('hdc-units').value==='us';
+      var h=us?(parseFloat($('hdc-h-ft').value)>0||parseFloat($('hdc-h-in').value)>0):parseFloat($('hdc-h-cm').value)>0;
+      return h&&parseFloat($('hdc-w').value)>0;
+    }
+    return true;
+  }
+  function go(n){
+    i=Math.max(0,Math.min(order.length-1,n));
+    while(!shown(order[i])&&i<order.length-1)i++;
+    Object.keys(stepEls).forEach(function(k){stepEls[k].classList.toggle('on',k===order[i]);});
+    render();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function render(){
+    var name=order[i], last=i>=order.length-1;
+    $('progbar').style.width=Math.round((i/(order.length-1))*100)+'%';
+    $('back').hidden=(i===0);
+    $('next').textContent=name==='welcome'?'Start':(last?'See all my targets':(name==='reveal'?'Keep going':'Continue'));
+    $('next').disabled=!valid(name);
+    $('skip').hidden=!(name==='life'||name==='diet'||name==='health');
+    $('restart').hidden=(i===0);
+    if(name==='reveal')fillReveal();
+    if(name==='life')syncConditional();
+  }
+  $('next').addEventListener('click',function(){
+    if(i>=order.length-1){finish();return;}
+    go(i+1);
+  });
+  $('skip').addEventListener('click',function(){ if(i>=order.length-1){finish();return;} go(i+1); });
+  $('back').addEventListener('click',function(){
+    var j=i-1; while(j>0&&!shown(order[j]))j--; go(j);
+  });
+  $('restart').addEventListener('click',function(){
+    if(!confirm('Start over? Your answers on this page will be cleared.'))return;
+    location.reload();
+  });
+  document.addEventListener('input',function(e){
+    if(e.target.closest&&e.target.closest('#steps'))$('next').disabled=!valid(order[i]);
+  });
+
+  /* ---------- read engine output ---------- */
+  function ownText(el){var t='',n;for(n=el.firstChild;n;n=n.nextSibling){if(n.nodeType===3)t+=n.nodeValue;}return t.trim();}
+  function cards(){
+    var out=$('hdc-out'),res=[];
+    if(!out)return res;
+    out.querySelectorAll('.hdc-card').forEach(function(c){
+      var k=c.querySelector('.hdc-k'),v=c.querySelector('.hdc-v'),n=c.querySelector('.hdc-n'),hz=c.querySelector('.hdc-hz');
+      if(!k||!v)return;
+      res.push({name:k.textContent.trim(),value:ownText(v),
+        band:(v.querySelector('.hdc-band')||{}).textContent||'',
+        note:n?n.textContent.trim():'',hz:hz?hz.textContent.trim():'',el:c});
+    });
+    return res;
+  }
+  function find(n){var a=cards();for(var k=0;k<a.length;k++)if(a[k].name===n)return a[k];return null;}
+
+  function fillReveal(){
+    var c=find('Calories');
+    if(!c){$('rv-kcal').textContent='—';return;}
+    $('rv-kcal').textContent=(c.value.match(/[\d,]+/)||['—'])[0];
+    $('rv-band').textContent=(c.band||'').replace(/^±/,'± ');
+    $('rv-note').innerHTML='<b>Where this comes from.</b> '+(c.note||'');
+  }
+
+  /* ---------- results ---------- */
+  var MACROS=['Protein','Carbohydrate','Total fat'];
+  var KEY=['Fiber','Water (drinks)','Sodium','Added sugar'];
+  function miniHTML(list){
+    return list.map(function(n){var c=find(n);if(!c)return '';
+      return '<div class="m"><div class="mk">'+c.name+(c.hz?' · '+c.hz:'')+'</div><div class="mv num">'+c.value+'</div></div>';
+    }).join('');
+  }
+  function buildResults(){
+    var c=find('Calories');
+    if(c){$('t-kcal').textContent=(c.value.match(/[\d,]+/)||[''])[0]; $('t-band').textContent=(c.band||'').replace(/^±/,'± ');}
+    $('t-macros').innerHTML=miniHTML(MACROS);
+    $('t-key').innerHTML=miniHTML(KEY);
+    buildAnswers(); buildByTime(); applySearch();
+  }
+  function buildAnswers(){
+    var us=$('hdc-units').value==='us';
+    var neatLab=($('hdc-neat').selectedOptions[0]||{}).textContent||'';
+    var goalLab=($('hdc-goal').selectedOptions[0]||{}).textContent||'';
+    var rows=[
+      ['Sex',$('hdc-sex').value==='female'?'Female':'Male','basics'],
+      ['Age',($('hdc-age').value||'—')+' years','basics'],
+      ['Height',us?(($('hdc-h-ft').value||'0')+' ft '+($('hdc-h-in').value||'0')+' in'):(($('hdc-h-cm').value||'—')+' cm'),'body'],
+      ['Weight',($('hdc-w').value||'—')+' '+(us?'lb':'kg'),'body'],
+      ['Body fat',$('hdc-bf').value?($('hdc-bf').value+'%'):'Not given','body'],
+      ['Daily activity',neatLab,'activity'],
+      ['Workouts',($('hdc-ex').value||'0')+' kcal/day','workouts'],
+      ['Goal',goalLab,'goal']
+    ];
+    if($('hdc-goal').value==='lose'||$('hdc-goal').value==='gain')
+      rows.push(['Pace',($('hdc-pace').selectedOptions[0]||{}).textContent||'','pace']);
+    var life=[];
+    if($('hdc-preg').checked)life.push('Pregnant (trimester '+$('hdc-tri').value+')');
+    if($('hdc-lac').checked)life.push('Breastfeeding');
+    if($('hdc-smoke').checked)life.push('Smoker');
+    rows.push(['Life stage',life.length?life.join(', '):'None','life']);
+    var r=RESTRICTIONS.filter(function(x){return $(x[0]).checked;}).map(function(x){return x[1];});
+    rows.push(['Diet',r.length?r.join(', '):'No restrictions','diet']);
+    var d=CONDITIONS.filter(function(x){return $(x[0]).checked;}).map(function(x){return x[1];});
+    rows.push(['Health',d.length?d.join(', '):'None reported','health']);
+    $('ans').innerHTML=rows.map(function(x){
+      return '<div class="ansrow"><span class="ak">'+x[0]+'</span><span class="av">'+x[1]+'</span>'+
+             '<button type="button" data-goto="'+x[2]+'">Edit</button></div>';
+    }).join('');
+  }
+  $('ans').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-goto]'); if(!b)return;
+    $('results').classList.remove('on'); $('steps').style.display='';
+    document.querySelector('.navbar').style.display='';
+    go(order.indexOf(b.dataset.goto));
+  });
+
+  /* Engine badge labels are lowercase ("per meal", "weekly average"), so match in
+     lowercase; cards with no badge (BMI) aren't targets and go last. */
+  var HZ_ORDER=['per meal','daily','few-day avg','weekly average','monthly+','long-term','reference'];
+  var HZ_BLURB={
+    'per meal':'Spread across your meals — how you distribute it matters more than the daily total.',
+    'daily':'Aim for these most days — your body regulates them acutely.',
+    'few-day avg':'Judge over a rolling 2–3 days. One low day evens out.',
+    'weekly average':'Judge over about a week. One off day genuinely does not matter.',
+    'monthly+':'Buffered by body stores for weeks. Never chase these daily.',
+    'long-term':'Months to years — only the overall pattern matters.',
+    'reference':'Context, not a target to hit.'
+  };
+  function buildByTime(){
+    var groups={};
+    cards().forEach(function(c){
+      var g=(c.hz||'reference').toLowerCase();
+      (groups[g]=groups[g]||[]).push(c);
+    });
+    var keys=HZ_ORDER.filter(function(k){return groups[k];})
+      .concat(Object.keys(groups).filter(function(k){return HZ_ORDER.indexOf(k)<0;}));
+    $('by-time').innerHTML=keys.map(function(g){
+      return '<div class="hdc-sub">'+g+'</div>'+
+             (HZ_BLURB[g]?'<p class="tblurb">'+HZ_BLURB[g]+'</p>':'')+
+             '<div class="hdc-grid">'+groups[g].map(function(c){return c.el.outerHTML;}).join('')+'</div>';
+    }).join('');
+  }
+  function applySearch(){
+    var q=($('q').value||'').trim().toLowerCase();
+    var host=$('v-time').getAttribute('aria-pressed')==='true'?$('by-time'):$('hdc-out');
+    host.querySelectorAll('.hdc-card').forEach(function(c){
+      var hit=!q||c.textContent.toLowerCase().indexOf(q)>=0;
+      c.classList.toggle('hidecard',!hit);
+    });
+  }
+  $('q').addEventListener('input',applySearch);
+  function setView(byTime){
+    $('v-group').setAttribute('aria-pressed',String(!byTime));
+    $('v-time').setAttribute('aria-pressed',String(byTime));
+    $('hdc-out').hidden=byTime; $('by-time').hidden=!byTime;
+    applySearch();
+  }
+  $('v-group').addEventListener('click',function(){setView(false);});
+  $('v-time').addEventListener('click',function(){setView(true);});
+
+  document.querySelector('.tabs').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-pane]'); if(!b)return;
+    this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});
+    ['today','all','answers'].forEach(function(p){$('pane-'+p).classList.toggle('on',p===b.dataset.pane);});
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  function finish(){
+    $('steps').style.display='none';
+    document.querySelector('.navbar').style.display='none';
+    $('results').classList.add('on');
+    $('progbar').style.width='100%';
+    $('restart').hidden=false;
+    buildResults();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  /* keep results live if the engine re-renders */
+  if(window.MutationObserver&&$('hdc-out')){
+    new MutationObserver(function(){
+      if($('results').classList.contains('on'))buildResults();
+      if(order[i]==='reveal')fillReveal();
+    }).observe($('hdc-out'),{childList:true,subtree:true});
+  }
+
+  /* ---------- body-fat sheet ---------- */
+  $('open-bf').addEventListener('click',function(){$('bf-sheet').classList.add('on');syncConditional();});
+  function closeSheet(){$('bf-sheet').classList.remove('on');}
+  $('bf-close').addEventListener('click',closeSheet);
+  $('bf-done').addEventListener('click',closeSheet);
+  $('bf-sheet').addEventListener('click',function(e){if(e.target===this)closeSheet();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet();});
+  $('bfp-consent').addEventListener('change',function(){$('bfp-config').style.display=this.checked?'grid':'none';});
+
+  /* ---------- boot ---------- */
+  syncUnits(); syncConditional(); render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,15 @@
+# macOS
+.DS_Store
+
+# Xcode / iOS build output
+ios/build/
+ios/*.xcodeproj/xcuserdata/
+ios/*.xcworkspace/xcuserdata/
+DerivedData/
+
+# Python
+__pycache__/
+*.pyc
+
+# iOS app lives outside this repo for now
+ios/
