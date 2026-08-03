@@ -1,0 +1,850 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="color-scheme" content="light dark">
+<meta name="description" content="Your complete daily nutrition targets — about 42 evidence-based numbers, calculated privately in your browser.">
+<title>Your Nutritionist — evidence-based daily nutrition targets</title>
+<style>
+/* ============================ tokens ============================ */
+:root{
+  --bg:#f6f9f7; --surface:#fff; --surface2:#f2f6f3;
+  --ink:#16211b; --muted:#5c6b62; --faint:#84968c;
+  --line:#e2eae5; --line2:#d3ded7;
+  --accent:#2f7d52; --accent-ink:#1f5d3b; --accent-soft:#e8f2ec;
+  --warn:#8a6410; --warn-soft:#fdf5e3; --warn-line:#ecdcb4;
+  --danger:#a33328; --danger-soft:#fdeeec; --danger-line:#f2cdc7;
+  --shadow:0 1px 2px rgba(20,40,28,.04),0 12px 28px -18px rgba(20,40,28,.28);
+  --r-card:16px; --r-ctl:12px;
+}
+@media (prefers-color-scheme:dark){
+  :root{
+    --bg:#0e1512; --surface:#161e19; --surface2:#1b2520;
+    --ink:#e8efe9; --muted:#9baca2; --faint:#7d8f85;
+    --line:#253029; --line2:#314037;
+    --accent:#5cbb8a; --accent-ink:#8ed7b0; --accent-soft:#14291f;
+    --warn:#d8a94f; --warn-soft:#241d0e; --warn-line:#40331a;
+    --danger:#e08278; --danger-soft:#2a1614; --danger-line:#452420;
+    --shadow:0 1px 2px rgba(0,0,0,.3),0 14px 32px -20px rgba(0,0,0,.7);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font:400 17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  -webkit-font-smoothing:antialiased; -webkit-text-size-adjust:100%;
+  padding-bottom:env(safe-area-inset-bottom);
+}
+button{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px;border-radius:6px}
+.num{font-variant-numeric:tabular-nums}
+.sr{position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap;border:0}
+
+/* ============================ shell ============================ */
+.wrap{max-width:660px;margin:0 auto;padding:0 20px}
+.topbar{
+  position:sticky;top:0;z-index:30;background:color-mix(in srgb,var(--bg) 86%,transparent);
+  backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-bottom:1px solid var(--line);padding-top:env(safe-area-inset-top);
+}
+.topbar-in{display:flex;align-items:center;gap:10px;height:52px}
+.brand{display:flex;align-items:center;gap:8px;font-weight:650;font-size:16px;letter-spacing:-.01em}
+.brand .dot{font-size:18px;line-height:1}
+.topbar .spacer{flex:1}
+.tb-btn{background:none;border:0;color:var(--muted);font-size:14px;font-weight:550;cursor:pointer;padding:8px;border-radius:8px}
+.tb-btn:hover{color:var(--accent)}
+
+.prog{height:3px;background:var(--line);position:relative;overflow:hidden}
+.prog i{position:absolute;inset:0 auto 0 0;background:var(--accent);width:0;transition:width .32s cubic-bezier(.4,0,.2,1)}
+
+/* ============================ steps ============================ */
+main{padding:26px 0 120px}
+.step{display:none;animation:in .26s cubic-bezier(.2,.7,.3,1)}
+.step.on{display:block}
+@keyframes in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.step{animation:none}.prog i{transition:none}}
+
+.eyebrow{font-size:12px;font-weight:700;letter-spacing:.09em;text-transform:uppercase;color:var(--accent);margin:0 0 10px}
+h1{font-size:clamp(26px,6vw,33px);line-height:1.14;letter-spacing:-.022em;font-weight:700;margin:0 0 8px;text-wrap:balance}
+.sub{color:var(--muted);font-size:16px;margin:0 0 24px;max-width:46ch;text-wrap:pretty}
+h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:28px 0 10px}
+
+/* fields */
+.fields{display:grid;gap:16px}
+.f{display:grid;gap:7px}
+.f > .lab{font-size:14px;font-weight:600}
+.f .hint{font-size:13px;color:var(--muted);line-height:1.4}
+.in{
+  width:100%;font:inherit;font-size:17px;padding:14px 15px;border-radius:var(--r-ctl);
+  border:1px solid var(--line2);background:var(--surface);color:var(--ink);min-height:52px;
+}
+.in::placeholder{color:var(--faint)}
+.in:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 3px var(--accent-soft)}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.suffix{position:relative}
+.suffix .u{position:absolute;right:14px;top:50%;transform:translateY(-50%);color:var(--muted);font-size:15px;pointer-events:none}
+
+/* segmented */
+.seg{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--surface2);border:1px solid var(--line);padding:4px;border-radius:var(--r-ctl)}
+.seg button{
+  border:0;background:none;padding:12px 8px;border-radius:9px;font-size:15px;font-weight:550;
+  color:var(--muted);cursor:pointer;min-height:44px;transition:background .15s,color .15s
+}
+.seg button[aria-pressed="true"]{background:var(--surface);color:var(--ink);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.07)}
+
+/* option cards */
+.opts{display:grid;gap:9px}
+.opt{
+  display:flex;align-items:flex-start;gap:13px;text-align:left;width:100%;
+  background:var(--surface);border:1px solid var(--line2);border-radius:var(--r-card);
+  padding:15px 16px;cursor:pointer;transition:border-color .15s,background .15s;min-height:56px
+}
+.opt:hover{border-color:var(--accent)}
+.opt[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);box-shadow:0 0 0 1px var(--accent) inset}
+.opt .tick{
+  flex:0 0 auto;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);
+  display:grid;place-items:center;margin-top:1px;color:#fff;font-size:12px
+}
+.opt[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent)}
+.opt .tick svg{width:12px;height:12px;opacity:0}
+.opt[aria-pressed="true"] .tick svg{opacity:1}
+.opt .t{font-weight:600;font-size:16px;line-height:1.3}
+.opt .d{color:var(--muted);font-size:13.5px;line-height:1.4;margin-top:2px}
+.opt.rec .t::after{content:"Recommended";margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 32%,transparent);padding:2px 7px;border-radius:999px;vertical-align:2px}
+
+/* chips */
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  border:1px solid var(--line2);background:var(--surface);border-radius:999px;
+  padding:10px 15px;font-size:14.5px;font-weight:520;cursor:pointer;min-height:44px;
+  transition:border-color .15s,background .15s,color .15s
+}
+.chip:hover{border-color:var(--accent)}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+/* buttons / nav */
+.navbar{
+  position:fixed;left:0;right:0;bottom:0;z-index:30;
+  background:color-mix(in srgb,var(--bg) 88%,transparent);
+  backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
+  border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)
+}
+.navbar-in{display:flex;align-items:center;gap:10px;padding:12px 0}
+.btn{
+  border:0;border-radius:var(--r-ctl);padding:15px 22px;font-size:16.5px;font-weight:650;
+  cursor:pointer;min-height:52px;background:var(--accent);color:#fff;flex:1;transition:filter .15s
+}
+.btn:hover{filter:brightness(1.07)}
+.btn[disabled]{opacity:.42;cursor:not-allowed;filter:none}
+.btn.ghost{background:none;color:var(--muted);border:1px solid var(--line2);flex:0 0 auto;padding:15px 18px}
+.btn.link{background:none;color:var(--muted);border:0;flex:0 0 auto;font-weight:550;font-size:15px;padding:15px 10px}
+
+.note{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--muted);line-height:1.5}
+.note b{color:var(--ink);font-weight:620}
+.privacy{display:inline-flex;align-items:center;gap:8px;background:var(--accent-soft);color:var(--accent-ink);border:1px solid color-mix(in srgb,var(--accent) 26%,transparent);border-radius:999px;padding:8px 14px;font-size:13.5px;font-weight:600}
+.legal{font-size:12.5px;color:var(--faint);line-height:1.5;margin-top:18px}
+
+/* ============================ reveal ============================ */
+.hero{text-align:center;padding:14px 0 4px}
+.hero .kcal{font-size:clamp(54px,16vw,78px);font-weight:700;letter-spacing:-.045em;line-height:1;margin:6px 0 2px}
+.hero .unit{font-size:17px;color:var(--muted);font-weight:500}
+.hero .band{color:var(--muted);font-size:14.5px;margin-top:10px}
+.pill{display:inline-block;font-size:10.5px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:4px 10px;border-radius:999px;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+
+/* ============================ results ============================ */
+#results{display:none}
+#results.on{display:block}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--surface2);border:1px solid var(--line);padding:4px;border-radius:var(--r-ctl);margin:4px 0 22px;position:sticky;top:56px;z-index:20}
+.tabs button{border:0;background:none;padding:11px 6px;border-radius:9px;font-size:14.5px;font-weight:550;color:var(--muted);cursor:pointer;min-height:44px}
+.tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.07)}
+.pane{display:none}.pane.on{display:block}
+
+.tcard{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:17px 18px;box-shadow:var(--shadow)}
+.tcard.hero2{text-align:center;padding:26px 18px}
+.tcard.hero2 .k{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.tcard.hero2 .v{font-size:clamp(46px,13vw,64px);font-weight:700;letter-spacing:-.04em;line-height:1;margin:8px 0 4px}
+.mini{display:grid;grid-template-columns:repeat(auto-fit,minmax(146px,1fr));gap:10px;margin-top:12px}
+.mini .m{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:13px 14px;min-width:0}
+.mini .m .mk{font-size:12.5px;color:var(--muted);font-weight:550}
+.mini .m .mv{font-size:18px;font-weight:700;letter-spacing:-.025em;margin-top:3px;color:var(--accent);overflow-wrap:anywhere}
+.tblurb{font-size:13.5px;color:var(--muted);line-height:1.5;margin:-4px 0 12px}
+
+.search{position:relative;margin-bottom:14px}
+.search input{width:100%;font:inherit;font-size:16px;padding:13px 15px 13px 40px;border-radius:var(--r-ctl);border:1px solid var(--line2);background:var(--surface);color:var(--ink);min-height:48px}
+.search svg{position:absolute;left:13px;top:50%;transform:translateY(-50%);width:17px;height:17px;color:var(--muted)}
+.viewtog{display:flex;gap:6px;margin-bottom:16px}
+.viewtog button{flex:1;border:1px solid var(--line2);background:var(--surface);border-radius:10px;padding:9px;font-size:13.5px;font-weight:550;color:var(--muted);cursor:pointer;min-height:42px}
+.viewtog button[aria-pressed="true"]{border-color:var(--accent);background:var(--accent-soft);color:var(--accent-ink);font-weight:650}
+
+.ansrow{display:flex;align-items:center;gap:12px;padding:14px 0;border-bottom:1px solid var(--line)}
+.ansrow .ak{font-size:14px;color:var(--muted);flex:0 0 42%}
+.ansrow .av{font-weight:600;font-size:15px;flex:1}
+.ansrow button{background:none;border:0;color:var(--accent);font-size:14px;font-weight:600;cursor:pointer;padding:6px}
+
+/* ============ engine output restyle (#hdc-out lives in All targets) ============ */
+.tgt .hdc-sub{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin:26px 0 10px}
+.tgt .hdc-grid{display:grid;grid-template-columns:1fr;gap:10px}
+@media(min-width:620px){.tgt .hdc-grid{grid-template-columns:1fr 1fr}}
+.tgt .hdc-card{background:var(--surface);border:1px solid var(--line);border-radius:var(--r-card);padding:15px 16px;min-width:0}
+.tgt .hdc-khz{display:flex;align-items:flex-start;justify-content:space-between;gap:10px}
+.tgt .hdc-k{font-size:11.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.tgt .hdc-v{font-size:23px;font-weight:700;color:var(--accent);letter-spacing:-.02em;margin:6px 0 5px;line-height:1.15;overflow-wrap:anywhere}
+.tgt .hdc-band{display:block;font-size:12.5px;font-weight:500;color:var(--muted);margin-top:2px}
+.tgt .hdc-n{font-size:13px;color:var(--muted);line-height:1.5}
+.tgt .hdc-hz{font-size:9.5px;font-weight:700;letter-spacing:.06em;text-transform:uppercase;padding:3px 7px;border-radius:999px;white-space:nowrap;flex:0 0 auto;background:var(--surface2);color:var(--muted);border:1px solid var(--line)}
+.tgt .hdc-hzleg{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:13px 15px;margin:0 0 6px;font-size:13.5px;color:var(--muted);line-height:1.5}
+.tgt .hdc-hzk{display:inline-flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+.tgt .hdc-more{border:1px solid var(--line);border-radius:var(--r-card);background:var(--surface2);margin-top:18px}
+.tgt .hdc-more>summary{cursor:pointer;padding:15px 16px;font-weight:620;color:var(--accent);font-size:15px;list-style:none;min-height:52px;display:flex;align-items:center}
+.tgt .hdc-more>summary::-webkit-details-marker{display:none}
+.tgt .hdc-more>summary::before{content:"▸ ";color:var(--muted)}
+.tgt .hdc-more[open]>summary::before{content:"▾ "}
+.tgt .hdc-more>div{padding:0 14px 14px}
+.tgt .hdc-cond,.tgt .hdc-flags,.tgt .hdc-warn{border-radius:14px;padding:14px 16px;font-size:14px;line-height:1.55;margin-top:12px}
+.tgt .hdc-cond{background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 25%,transparent)}
+.tgt .hdc-flags{background:var(--warn-soft);border:1px solid var(--warn-line);color:var(--warn)}
+.tgt .hdc-warn{background:var(--danger-soft);border:1px solid var(--danger-line);color:var(--danger)}
+.tgt .hdc-cond ul,.tgt .hdc-flags ul,.tgt .hdc-warn ul{margin:8px 0 0;padding-left:19px}
+.tgt .hdc-cond li,.tgt .hdc-flags li,.tgt .hdc-warn li{margin:5px 0}
+.tgt .hdc-disc{font-size:12.5px;color:var(--faint);line-height:1.55;margin-top:20px}
+.tgt .hdc-hint{color:var(--muted);font-size:15px}
+.hidecard{display:none !important}
+
+/* body-fat estimator sheet */
+.sheet{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;background:rgba(10,20,15,.45)}
+.sheet.on{display:flex}
+.sheet-in{background:var(--bg);width:100%;max-width:660px;max-height:88vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:22px 20px calc(28px + env(safe-area-inset-bottom));border:1px solid var(--line)}
+.sheet h3{margin:0 0 4px;font-size:20px;letter-spacing:-.015em}
+.sheet .close{position:sticky;top:0;float:right;background:var(--surface2);border:1px solid var(--line);border-radius:999px;width:34px;height:34px;cursor:pointer;color:var(--muted);font-size:17px;line-height:1}
+.bfcards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.tape{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
+.engine-dom{display:none}
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <div class="wrap topbar-in">
+    <span class="brand"><span class="dot">🍎</span> Your Nutritionist</span>
+    <span class="spacer"></span>
+    <button class="tb-btn" id="restart" hidden>Start over</button>
+  </div>
+</div>
+<div class="prog"><i id="progbar"></i></div>
+
+<div class="hdcalc" id="app">
+<div class="wrap">
+
+<main id="steps">
+
+  <!-- ============ 0 · welcome ============ -->
+  <section class="step on" data-step="welcome">
+    <p class="eyebrow">Evidence-based</p>
+    <h1>Your complete daily nutrition targets.</h1>
+    <p class="sub">About 42 numbers — calories, macros, limits, food groups, vitamins and minerals — each personalised to you and backed by published research.</p>
+    <p><span class="privacy">🔒 Runs entirely in your browser. Nothing is uploaded.</span></p>
+    <div class="note" style="margin-top:22px">
+      <b>Takes about a minute.</b> A few questions about you, then you'll see your calorie number — the rest follows.
+    </div>
+    <p class="legal">Educational, not medical advice. For pregnancy, medical conditions, medications, or any history of disordered eating, work with a doctor or registered dietitian.</p>
+  </section>
+
+  <!-- ============ 1 · basics ============ -->
+  <section class="step" data-step="basics">
+    <p class="eyebrow">Step 1</p>
+    <h1>A few basics</h1>
+    <p class="sub">These set your baseline energy needs.</p>
+    <div class="fields">
+      <div class="f">
+        <span class="lab">Biological sex</span>
+        <div class="seg" id="seg-sex" role="group" aria-label="Biological sex">
+          <button type="button" data-v="female">Female</button>
+          <button type="button" data-v="male">Male</button>
+        </div>
+        <span class="hint">Used for the formulas and nutrient reference values.</span>
+      </div>
+      <div class="f">
+        <label class="lab" for="hdc-age">Age</label>
+        <div class="suffix"><input class="in num" id="hdc-age" type="number" inputmode="numeric" min="14" max="100" placeholder="e.g. 34"><span class="u">years</span></div>
+      </div>
+      <div class="f">
+        <span class="lab">Units</span>
+        <div class="seg" id="seg-units" role="group" aria-label="Units">
+          <button type="button" data-v="metric">Metric</button>
+          <button type="button" data-v="us">US</button>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 2 · body ============ -->
+  <section class="step" data-step="body">
+    <p class="eyebrow">Step 2</p>
+    <h1>Height &amp; weight</h1>
+    <p class="sub">The two numbers your energy needs are built from.</p>
+    <div class="fields">
+      <div class="f" id="wrap-cm">
+        <label class="lab" for="hdc-h-cm">Height</label>
+        <div class="suffix"><input class="in num" id="hdc-h-cm" type="number" inputmode="decimal" placeholder="e.g. 178"><span class="u">cm</span></div>
+      </div>
+      <div class="f" id="wrap-ftin" hidden>
+        <span class="lab">Height</span>
+        <div class="row2">
+          <div class="suffix"><input class="in num" id="hdc-h-ft" type="number" inputmode="numeric" placeholder="5"><span class="u">ft</span></div>
+          <div class="suffix"><input class="in num" id="hdc-h-in" type="number" inputmode="numeric" placeholder="10"><span class="u">in</span></div>
+        </div>
+      </div>
+      <div class="f">
+        <label class="lab" for="hdc-w">Weight</label>
+        <div class="suffix"><input class="in num" id="hdc-w" type="number" inputmode="decimal" placeholder="e.g. 72"><span class="u" id="wunit">kg</span></div>
+      </div>
+      <div class="f">
+        <label class="lab" for="hdc-bf">Body fat % <span style="font-weight:400;color:var(--muted)">— optional</span></label>
+        <div class="suffix"><input class="in num" id="hdc-bf" type="number" inputmode="decimal" min="3" max="60" placeholder="skip if unsure"><span class="u">%</span></div>
+        <span class="hint">Only helps if it's a real measurement — a guess can make the numbers worse. <button type="button" class="btn link" id="open-bf" style="padding:0;color:var(--accent);font-weight:600;min-height:0">Estimate it →</button></span>
+      </div>
+    </div>
+    <div class="note" style="margin-top:20px">Body fat % is just one input to the math — <b>not a health or worth score</b>. Leaving it blank is completely fine.</div>
+  </section>
+
+  <!-- ============ 3 · daily activity ============ -->
+  <section class="step" data-step="activity">
+    <p class="eyebrow">Step 3</p>
+    <h1>How much do you move day to day?</h1>
+    <p class="sub">Your job and lifestyle — <b>not</b> counting workouts. Those come next, added on top.</p>
+    <div class="opts" id="opt-neat" role="group" aria-label="Daily activity"></div>
+  </section>
+
+  <!-- ============ 4 · workouts ============ -->
+  <section class="step" data-step="workouts">
+    <p class="eyebrow">Step 4</p>
+    <h1>Do you log workouts?</h1>
+    <p class="sub">Enter the calories you burn in a typical day of exercise. Leave it at 0 if you'd rather not track it.</p>
+    <div class="fields">
+      <div class="f">
+        <label class="lab" for="hdc-ex">Workout calories per day</label>
+        <div class="suffix"><input class="in num" id="hdc-ex" type="number" inputmode="numeric" min="0" max="3500" placeholder="0"><span class="u">kcal</span></div>
+        <span class="hint">Added on top of your daily activity — never counted twice.</span>
+      </div>
+    </div>
+    <div class="note" style="margin-top:20px">Watch and tracker estimates tend to run high. Treat this as a rough figure and adjust from your real weight trend over a few weeks.</div>
+  </section>
+
+  <!-- ============ 5 · goal ============ -->
+  <section class="step" data-step="goal">
+    <p class="eyebrow">Step 5</p>
+    <h1>What are you aiming for?</h1>
+    <p class="sub">You can change this any time — nothing here is locked in.</p>
+    <div class="opts" id="opt-goal" role="group" aria-label="Goal"></div>
+  </section>
+
+  <!-- ============ 6 · pace (conditional) ============ -->
+  <section class="step" data-step="pace">
+    <p class="eyebrow">Step 6</p>
+    <h1>How fast?</h1>
+    <p class="sub">Slower protects muscle and is far easier to sustain. Anything above 1% of body weight per week isn't advised without a clinician.</p>
+    <div class="opts" id="opt-pace" role="group" aria-label="Pace"></div>
+  </section>
+
+  <!-- ============ 7 · reveal ============ -->
+  <section class="step" data-step="reveal">
+    <p class="eyebrow">Your number</p>
+    <h1>Here's your daily energy target.</h1>
+    <div class="hero">
+      <div class="kcal num" id="rv-kcal">—</div>
+      <div class="unit">kcal per day</div>
+      <div class="band num" id="rv-band"></div>
+      <div style="margin-top:14px"><span class="pill" id="rv-pill">WEEKLY AVERAGE</span></div>
+    </div>
+    <div class="note" style="margin-top:22px" id="rv-note"></div>
+    <p class="sub" style="margin-top:20px">A few optional questions next — allergies, health conditions, life stage — and we'll tailor the other 41 targets to match.</p>
+  </section>
+
+  <!-- ============ 8 · life stage ============ -->
+  <section class="step" data-step="life">
+    <p class="eyebrow">Optional</p>
+    <h1>Anything else about you?</h1>
+    <p class="sub">These change several targets meaningfully. Skip if none apply.</p>
+    <div id="life-female">
+      <h2 class="grp">Life stage</h2>
+      <div class="chips">
+        <button type="button" class="chip" data-cb="hdc-preg">Pregnant</button>
+        <button type="button" class="chip" data-cb="hdc-lac">Breastfeeding</button>
+      </div>
+      <div class="f" id="wrap-tri" style="margin-top:14px" hidden>
+        <span class="lab">Trimester</span>
+        <div class="seg" id="seg-tri" role="group" aria-label="Trimester">
+          <button type="button" data-v="1">First</button>
+          <button type="button" data-v="2">Second</button>
+          <button type="button" data-v="3">Third</button>
+        </div>
+      </div>
+    </div>
+    <h2 class="grp">Other</h2>
+    <div class="chips"><button type="button" class="chip" data-cb="hdc-smoke">I smoke</button></div>
+  </section>
+
+  <!-- ============ 9 · restrictions ============ -->
+  <section class="step" data-step="diet">
+    <p class="eyebrow">Optional</p>
+    <h1>How do you eat?</h1>
+    <p class="sub">We'll adjust targets and swap the food suggestions to match.</p>
+    <div class="chips" id="chips-r"></div>
+  </section>
+
+  <!-- ============ 10 · conditions ============ -->
+  <section class="step" data-step="health">
+    <p class="eyebrow">Optional</p>
+    <h1>Any health conditions?</h1>
+    <p class="sub">Several of these change your targets — sodium, protein, potassium and more. Your answers stay on this device.</p>
+    <div class="chips" id="chips-d"></div>
+    <p class="legal">This tool is educational and can't replace your clinician. If you have a medical condition, confirm these numbers with them.</p>
+  </section>
+
+</main>
+
+<!-- ============================ RESULTS ============================ -->
+<div id="results">
+  <div class="tabs" role="tablist">
+    <button role="tab" data-pane="today" aria-selected="true">Today</button>
+    <button role="tab" data-pane="all" aria-selected="false">All targets</button>
+    <button role="tab" data-pane="answers" aria-selected="false">Your answers</button>
+  </div>
+
+  <div class="pane on" id="pane-today">
+    <div class="tcard hero2">
+      <div class="k">Daily calories</div>
+      <div class="v num" id="t-kcal">—</div>
+      <div style="color:var(--muted);font-size:14.5px" class="num" id="t-band"></div>
+      <div style="margin-top:12px"><span class="pill">WEEKLY AVERAGE</span></div>
+      <div style="margin-top:14px;color:var(--muted);font-size:14px;line-height:1.5">Judge this over a week — single days move around, and that's normal.</div>
+    </div>
+    <div class="mini" id="t-macros"></div>
+    <h2 class="grp">Worth knowing</h2>
+    <div class="mini" id="t-key"></div>
+    <div class="note" style="margin-top:20px">Every target carries the <b>timescale it's genuinely best judged over</b> — most vitamins and minerals buffer for weeks, so you don't need to hit them daily. See <b>All targets</b> for the full set.</div>
+  </div>
+
+  <div class="pane" id="pane-all">
+    <div class="search">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
+      <input id="q" type="search" placeholder="Search targets — protein, iron, sodium…" aria-label="Search targets">
+    </div>
+    <div class="viewtog" role="group" aria-label="Grouping">
+      <button type="button" id="v-group" aria-pressed="true">By group</button>
+      <button type="button" id="v-time" aria-pressed="false">By timescale</button>
+    </div>
+    <div id="hdc-out" class="tgt"></div>
+    <div id="by-time" class="tgt" hidden></div>
+  </div>
+
+  <div class="pane" id="pane-answers">
+    <div id="ans"></div>
+    <p class="legal" id="ans-legal">Everything above stays in this browser. Nothing is uploaded, and clearing your browser data removes it.</p>
+  </div>
+
+  <p class="legal" style="text-align:center;margin:30px 0 10px">
+    <a href="Healthiest-Diet-Guide.html" style="color:var(--accent);font-weight:600;text-decoration:none">Read the full evidence guide →</a><br>
+    <span style="display:inline-block;margin-top:8px">22 sections, ~360 cited sources — the research every number here comes from.</span>
+  </p>
+</div>
+
+</div><!-- /wrap -->
+
+<!-- ===== engine DOM: real controls the verified engine reads. Driven by the UI above. ===== -->
+<div class="engine-dom" aria-hidden="true">
+  <select id="hdc-sex"><option value="female">Female</option><option value="male">Male</option></select>
+  <select id="hdc-units"><option value="metric">Metric</option><option value="us">US</option></select>
+  <span id="hdc-metric-h"></span><span id="hdc-us-h"></span><span id="hdc-w-unit">kg</span>
+  <select id="hdc-neat">
+    <option value="1.25">Mostly sitting (desk job)</option>
+    <option value="1.45" selected>Lightly active (some walking/standing)</option>
+    <option value="1.7">On your feet most of the day</option>
+    <option value="1.9">Physical / manual-labor job</option>
+    <option value="2.2">Very heavy labor</option>
+  </select>
+  <select id="hdc-goal">
+    <option value="lose">Lose fat</option><option value="gain">Gain (build muscle)</option>
+    <option value="recomp">Recomp (same weight)</option><option value="maintain" selected>Maintain &amp; get healthier</option>
+  </select>
+  <span id="hdc-pacelbl"><select id="hdc-pace"><option value="gentle">Gentle</option><option value="moderate" selected>Moderate</option><option value="aggressive">Aggressive</option></select></span>
+  <span id="hdc-preglbl"><input id="hdc-preg" type="checkbox"></span>
+  <span id="hdc-trilbl"><select id="hdc-tri"><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option></select></span>
+  <span id="hdc-laclbl"><input id="hdc-lac" type="checkbox"></span>
+  <input id="hdc-smoke" type="checkbox">
+  <input id="r-vegan" type="checkbox"><input id="r-veg" type="checkbox"><input id="r-dairy" type="checkbox">
+  <input id="r-gluten" type="checkbox"><input id="r-nut" type="checkbox"><input id="r-fish" type="checkbox">
+  <input id="r-egg" type="checkbox"><input id="r-soy" type="checkbox"><input id="r-sesame" type="checkbox">
+  <input id="d-hbp" type="checkbox"><input id="d-t2d" type="checkbox"><input id="d-ldl" type="checkbox">
+  <input id="d-ckd" type="checkbox"><input id="d-gout" type="checkbox"><input id="d-ibs" type="checkbox">
+  <input id="d-nafld" type="checkbox"><input id="d-bone" type="checkbox"><input id="d-gerd" type="checkbox">
+  <input id="d-hf" type="checkbox"><input id="d-glp1" type="checkbox">
+</div>
+</div><!-- /.hdcalc -->
+
+<div class="navbar">
+  <div class="wrap navbar-in">
+    <button class="btn ghost" id="back">Back</button>
+    <button class="btn" id="next">Start</button>
+    <button class="btn link" id="skip" hidden>Skip</button>
+  </div>
+</div>
+
+<!-- ===== body-fat estimator sheet ===== -->
+<div class="sheet" id="bf-sheet" role="dialog" aria-modal="true" aria-label="Estimate body fat">
+ <div class="sheet-in">
+  <button class="close" id="bf-close" aria-label="Close">✕</button>
+  <h3>Estimate your body fat</h3>
+  <p class="sub" style="margin-bottom:18px">Rough estimates (±3–5%). The tape method is the most accurate and stays on your device.</p>
+
+  <h2 class="grp" style="margin-top:0">1 · Tape measure — most accurate</h2>
+  <div class="tape">
+    <div class="f"><label class="lab" for="bft-neck">Neck (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-neck" type="number" inputmode="decimal" placeholder="neck"></div>
+    <div class="f"><label class="lab" for="bft-waist">Waist (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-waist" type="number" inputmode="decimal" placeholder="at navel"></div>
+    <div class="f" id="bft-hipwrap"><label class="lab" for="bft-hip">Hips (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-hip" type="number" inputmode="decimal" placeholder="widest"></div>
+    <div class="f" style="align-self:end"><button class="btn" id="bft-calc" style="min-height:52px">Estimate</button></div>
+  </div>
+  <div id="bft-out" style="margin-top:10px;font-weight:650;color:var(--accent)"></div>
+  <p class="hint" style="color:var(--muted);font-size:13px;margin-top:8px">US-Navy method: waist at the navel, neck just below the larynx<span class="bft-hiponly">, hips at the widest point</span>. ±3–4% vs a DEXA scan.</p>
+
+  <h2 class="grp">2 · Match the closest description</h2>
+  <div class="bfcards" id="hdc-bf-visual"></div>
+
+  <h2 class="grp">3 · From a photo (AI — optional)</h2>
+  <div class="note" style="background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)">
+    ⚠️ This is the one thing here that <b>leaves your device</b> — your photo is sent to whichever AI service you configure, and the estimate is <b>not medically validated</b>. The tape method above is more reliable.
+  </div>
+  <label class="chip" style="margin-top:12px;display:inline-flex;align-items:center;gap:9px;cursor:pointer">
+    <input id="bfp-consent" type="checkbox" style="width:20px;height:20px"> I understand and want to use it
+  </label>
+  <div id="bfp-config" style="display:none;margin-top:14px;display:grid;gap:10px">
+    <div class="f"><label class="lab" for="bfp-url">Vision API endpoint</label><input class="in" id="bfp-url" type="text" placeholder="https://openrouter.ai/api/v1/chat/completions"></div>
+    <div class="f"><label class="lab" for="bfp-model">Model</label><input class="in" id="bfp-model" type="text" placeholder="e.g. google/gemini-2.5-flash"></div>
+    <div class="f"><label class="lab" for="bfp-key">API key</label><input class="in" id="bfp-key" type="password" placeholder="stored only on this device"></div>
+    <div class="f"><label class="lab" for="bfp-front">Front photo</label><input class="in" id="bfp-front" type="file" accept="image/*"></div>
+    <div class="f"><label class="lab" for="bfp-side">Side photo (optional)</label><input class="in" id="bfp-side" type="file" accept="image/*"></div>
+    <button class="btn" id="bfp-go">Estimate from photos</button>
+    <div id="bfp-out" style="font-weight:650;color:var(--accent)"></div>
+  </div>
+  <button class="btn" id="bf-done" style="margin-top:20px">Done</button>
+ </div>
+</div>
+
+<!-- ============ VERIFIED ENGINE (byte-identical to the 12.1M-profile-tested build) ============ -->
+<!--ENGINE-->
+
+<!-- ============ UI controller — drives the engine's real controls ============ -->
+<script>
+(function(){
+  var $=function(id){return document.getElementById(id);};
+  var fire=function(el,t){el.dispatchEvent(new Event(t||'input',{bubbles:true}));};
+
+  /* ---------- option data (mirrors the engine's real <select> values) ---------- */
+  var NEAT=[
+    ['1.25','Mostly sitting','Desk job, driving, mostly seated day'],
+    ['1.45','Lightly active','Some walking and standing through the day'],
+    ['1.7','On your feet most of the day','Nurse, server, retail, teacher'],
+    ['1.9','Physical / manual-labor job','Construction, landscaping, warehouse'],
+    ['2.2','Very heavy labor','Sustained hard physical work all day']
+  ];
+  var GOALS=[
+    ['maintain','Maintain & get healthier','Hold your weight and improve diet quality',true],
+    ['lose','Lose fat','A moderate, sustainable deficit',false],
+    ['gain','Gain muscle','A small surplus alongside training',false],
+    ['recomp','Recomp','Same weight — lose fat, build muscle',false]
+  ];
+  var PACES=[
+    ['gentle','Gentle','About 0.5% of body weight per week',false],
+    ['moderate','Moderate','About 0.75% per week — a good default',true],
+    ['aggressive','Aggressive','Up to 1% per week. Only sensible at higher body fat',false]
+  ];
+  var RESTRICTIONS=[['r-vegan','Vegan'],['r-veg','Vegetarian'],['r-dairy','Dairy-free'],['r-gluten','Gluten-free / celiac'],
+    ['r-nut','Nut allergy'],['r-fish','Fish / shellfish'],['r-egg','Egg allergy'],['r-soy','Soy allergy'],['r-sesame','Sesame allergy']];
+  var CONDITIONS=[['d-hbp','High blood pressure'],['d-t2d','Type 2 diabetes'],['d-ldl','High LDL / heart disease'],
+    ['d-ckd','Kidney disease'],['d-gout','Gout'],['d-ibs','IBS'],['d-nafld','Fatty liver'],['d-bone','Osteoporosis'],
+    ['d-gerd','GERD / reflux'],['d-hf','Heart failure'],['d-glp1','GLP-1 medication']];
+
+  /* ---------- build option cards + chips ---------- */
+  function optCard(v,t,d,rec){
+    return '<button type="button" class="opt'+(rec?' rec':'')+'" data-v="'+v+'" aria-pressed="false">'+
+      '<span class="tick"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3.5"><path d="M20 6 9 17l-5-5"/></svg></span>'+
+      '<span><span class="t">'+t+'</span><span class="d">'+d+'</span></span></button>';
+  }
+  function fillOpts(host,rows,sel){
+    host.innerHTML=rows.map(function(r){return optCard(r[0],r[1],r[2],r[3]);}).join('');
+    host.addEventListener('click',function(e){
+      var b=e.target.closest('.opt'); if(!b)return;
+      var t=$(sel); t.value=b.dataset.v; fire(t,'change'); fire(t,'input');
+      paint(host,t.value);
+    });
+    paint(host,$(sel).value);
+  }
+  function paint(host,val){
+    host.querySelectorAll('.opt').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===val));});
+  }
+  fillOpts($('opt-neat'),NEAT,'hdc-neat');
+  fillOpts($('opt-goal'),GOALS,'hdc-goal');
+  fillOpts($('opt-pace'),PACES,'hdc-pace');
+
+  function fillChips(host,rows){
+    host.innerHTML=rows.map(function(r){return '<button type="button" class="chip" data-cb="'+r[0]+'" aria-pressed="false">'+r[1]+'</button>';}).join('');
+  }
+  fillChips($('chips-r'),RESTRICTIONS);
+  fillChips($('chips-d'),CONDITIONS);
+
+  document.addEventListener('click',function(e){
+    var c=e.target.closest('.chip[data-cb]'); if(!c)return;
+    var cb=$(c.dataset.cb); if(!cb)return;
+    cb.checked=!cb.checked; fire(cb,'change'); fire(cb,'input');
+    c.setAttribute('aria-pressed',String(cb.checked));
+    syncConditional();
+  });
+
+  /* ---------- segmented controls ---------- */
+  function seg(host,sel,after){
+    host.addEventListener('click',function(e){
+      var b=e.target.closest('button[data-v]'); if(!b)return;
+      var t=$(sel); t.value=b.dataset.v; fire(t,'change'); fire(t,'input');
+      host.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x===b));});
+      if(after)after();
+    });
+    var v=$(sel).value;
+    host.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-pressed',String(x.dataset.v===v));});
+  }
+  seg($('seg-sex'),'hdc-sex',function(){syncConditional();});
+  seg($('seg-units'),'hdc-units',function(){syncUnits();});
+  seg($('seg-tri'),'hdc-tri');
+
+  function syncUnits(){
+    var us=$('hdc-units').value==='us';
+    $('wrap-cm').hidden=us; $('wrap-ftin').hidden=!us;
+    $('wunit').textContent=us?'lb':'kg';
+    document.querySelectorAll('.bft-u').forEach(function(e){e.textContent=us?'in':'cm';});
+  }
+  function syncConditional(){
+    var fem=$('hdc-sex').value==='female';
+    $('life-female').hidden=!fem;
+    $('wrap-tri').hidden=!(fem&&$('hdc-preg').checked);
+    document.querySelectorAll('.bft-hiponly').forEach(function(e){e.style.display=fem?'':'none';});
+    var hw=$('bft-hipwrap'); if(hw)hw.style.display=fem?'':'none';
+  }
+
+  /* ---------- step flow ---------- */
+  var order=['welcome','basics','body','activity','workouts','goal','pace','reveal','life','diet','health'];
+  var i=0;
+  var stepEls={}; document.querySelectorAll('.step').forEach(function(s){stepEls[s.dataset.step]=s;});
+
+  function shown(name){
+    if(name==='pace'){
+      var g=$('hdc-goal').value, age=parseFloat($('hdc-age').value);
+      if(g!=='lose'&&g!=='gain')return false;
+      if(age>0&&age<18)return false;
+    }
+    if(name==='life'&&$('hdc-sex').value!=='female'){ return true; } // smoker still lives here
+    return true;
+  }
+  function valid(name){
+    if(name==='basics')return parseFloat($('hdc-age').value)>0;
+    if(name==='body'){
+      var us=$('hdc-units').value==='us';
+      var h=us?(parseFloat($('hdc-h-ft').value)>0||parseFloat($('hdc-h-in').value)>0):parseFloat($('hdc-h-cm').value)>0;
+      return h&&parseFloat($('hdc-w').value)>0;
+    }
+    return true;
+  }
+  function go(n){
+    i=Math.max(0,Math.min(order.length-1,n));
+    while(!shown(order[i])&&i<order.length-1)i++;
+    Object.keys(stepEls).forEach(function(k){stepEls[k].classList.toggle('on',k===order[i]);});
+    render();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+  function render(){
+    var name=order[i], last=i>=order.length-1;
+    $('progbar').style.width=Math.round((i/(order.length-1))*100)+'%';
+    $('back').hidden=(i===0);
+    $('next').textContent=name==='welcome'?'Start':(last?'See all my targets':(name==='reveal'?'Keep going':'Continue'));
+    $('next').disabled=!valid(name);
+    $('skip').hidden=!(name==='life'||name==='diet'||name==='health');
+    $('restart').hidden=(i===0);
+    if(name==='reveal')fillReveal();
+    if(name==='life')syncConditional();
+  }
+  $('next').addEventListener('click',function(){
+    if(i>=order.length-1){finish();return;}
+    go(i+1);
+  });
+  $('skip').addEventListener('click',function(){ if(i>=order.length-1){finish();return;} go(i+1); });
+  $('back').addEventListener('click',function(){
+    var j=i-1; while(j>0&&!shown(order[j]))j--; go(j);
+  });
+  $('restart').addEventListener('click',function(){
+    if(!confirm('Start over? Your answers on this page will be cleared.'))return;
+    location.reload();
+  });
+  document.addEventListener('input',function(e){
+    if(e.target.closest&&e.target.closest('#steps'))$('next').disabled=!valid(order[i]);
+  });
+
+  /* ---------- read engine output ---------- */
+  function ownText(el){var t='',n;for(n=el.firstChild;n;n=n.nextSibling){if(n.nodeType===3)t+=n.nodeValue;}return t.trim();}
+  function cards(){
+    var out=$('hdc-out'),res=[];
+    if(!out)return res;
+    out.querySelectorAll('.hdc-card').forEach(function(c){
+      var k=c.querySelector('.hdc-k'),v=c.querySelector('.hdc-v'),n=c.querySelector('.hdc-n'),hz=c.querySelector('.hdc-hz');
+      if(!k||!v)return;
+      res.push({name:k.textContent.trim(),value:ownText(v),
+        band:(v.querySelector('.hdc-band')||{}).textContent||'',
+        note:n?n.textContent.trim():'',hz:hz?hz.textContent.trim():'',el:c});
+    });
+    return res;
+  }
+  function find(n){var a=cards();for(var k=0;k<a.length;k++)if(a[k].name===n)return a[k];return null;}
+
+  function fillReveal(){
+    var c=find('Calories');
+    if(!c){$('rv-kcal').textContent='—';return;}
+    $('rv-kcal').textContent=(c.value.match(/[\d,]+/)||['—'])[0];
+    $('rv-band').textContent=(c.band||'').replace(/^±/,'± ');
+    $('rv-note').innerHTML='<b>Where this comes from.</b> '+(c.note||'');
+  }
+
+  /* ---------- results ---------- */
+  var MACROS=['Protein','Carbohydrate','Total fat'];
+  var KEY=['Fiber','Water (drinks)','Sodium','Added sugar'];
+  function miniHTML(list){
+    return list.map(function(n){var c=find(n);if(!c)return '';
+      return '<div class="m"><div class="mk">'+c.name+(c.hz?' · '+c.hz:'')+'</div><div class="mv num">'+c.value+'</div></div>';
+    }).join('');
+  }
+  function buildResults(){
+    var c=find('Calories');
+    if(c){$('t-kcal').textContent=(c.value.match(/[\d,]+/)||[''])[0]; $('t-band').textContent=(c.band||'').replace(/^±/,'± ');}
+    $('t-macros').innerHTML=miniHTML(MACROS);
+    $('t-key').innerHTML=miniHTML(KEY);
+    buildAnswers(); buildByTime(); applySearch();
+  }
+  function buildAnswers(){
+    var us=$('hdc-units').value==='us';
+    var neatLab=($('hdc-neat').selectedOptions[0]||{}).textContent||'';
+    var goalLab=($('hdc-goal').selectedOptions[0]||{}).textContent||'';
+    var rows=[
+      ['Sex',$('hdc-sex').value==='female'?'Female':'Male','basics'],
+      ['Age',($('hdc-age').value||'—')+' years','basics'],
+      ['Height',us?(($('hdc-h-ft').value||'0')+' ft '+($('hdc-h-in').value||'0')+' in'):(($('hdc-h-cm').value||'—')+' cm'),'body'],
+      ['Weight',($('hdc-w').value||'—')+' '+(us?'lb':'kg'),'body'],
+      ['Body fat',$('hdc-bf').value?($('hdc-bf').value+'%'):'Not given','body'],
+      ['Daily activity',neatLab,'activity'],
+      ['Workouts',($('hdc-ex').value||'0')+' kcal/day','workouts'],
+      ['Goal',goalLab,'goal']
+    ];
+    if($('hdc-goal').value==='lose'||$('hdc-goal').value==='gain')
+      rows.push(['Pace',($('hdc-pace').selectedOptions[0]||{}).textContent||'','pace']);
+    var life=[];
+    if($('hdc-preg').checked)life.push('Pregnant (trimester '+$('hdc-tri').value+')');
+    if($('hdc-lac').checked)life.push('Breastfeeding');
+    if($('hdc-smoke').checked)life.push('Smoker');
+    rows.push(['Life stage',life.length?life.join(', '):'None','life']);
+    var r=RESTRICTIONS.filter(function(x){return $(x[0]).checked;}).map(function(x){return x[1];});
+    rows.push(['Diet',r.length?r.join(', '):'No restrictions','diet']);
+    var d=CONDITIONS.filter(function(x){return $(x[0]).checked;}).map(function(x){return x[1];});
+    rows.push(['Health',d.length?d.join(', '):'None reported','health']);
+    $('ans').innerHTML=rows.map(function(x){
+      return '<div class="ansrow"><span class="ak">'+x[0]+'</span><span class="av">'+x[1]+'</span>'+
+             '<button type="button" data-goto="'+x[2]+'">Edit</button></div>';
+    }).join('');
+  }
+  $('ans').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-goto]'); if(!b)return;
+    $('results').classList.remove('on'); $('steps').style.display='';
+    document.querySelector('.navbar').style.display='';
+    go(order.indexOf(b.dataset.goto));
+  });
+
+  /* Engine badge labels are lowercase ("per meal", "weekly average"), so match in
+     lowercase; cards with no badge (BMI) aren't targets and go last. */
+  var HZ_ORDER=['per meal','daily','few-day avg','weekly average','monthly+','long-term','reference'];
+  var HZ_BLURB={
+    'per meal':'Spread across your meals — how you distribute it matters more than the daily total.',
+    'daily':'Aim for these most days — your body regulates them acutely.',
+    'few-day avg':'Judge over a rolling 2–3 days. One low day evens out.',
+    'weekly average':'Judge over about a week. One off day genuinely does not matter.',
+    'monthly+':'Buffered by body stores for weeks. Never chase these daily.',
+    'long-term':'Months to years — only the overall pattern matters.',
+    'reference':'Context, not a target to hit.'
+  };
+  function buildByTime(){
+    var groups={};
+    cards().forEach(function(c){
+      var g=(c.hz||'reference').toLowerCase();
+      (groups[g]=groups[g]||[]).push(c);
+    });
+    var keys=HZ_ORDER.filter(function(k){return groups[k];})
+      .concat(Object.keys(groups).filter(function(k){return HZ_ORDER.indexOf(k)<0;}));
+    $('by-time').innerHTML=keys.map(function(g){
+      return '<div class="hdc-sub">'+g+'</div>'+
+             (HZ_BLURB[g]?'<p class="tblurb">'+HZ_BLURB[g]+'</p>':'')+
+             '<div class="hdc-grid">'+groups[g].map(function(c){return c.el.outerHTML;}).join('')+'</div>';
+    }).join('');
+  }
+  function applySearch(){
+    var q=($('q').value||'').trim().toLowerCase();
+    var host=$('v-time').getAttribute('aria-pressed')==='true'?$('by-time'):$('hdc-out');
+    host.querySelectorAll('.hdc-card').forEach(function(c){
+      var hit=!q||c.textContent.toLowerCase().indexOf(q)>=0;
+      c.classList.toggle('hidecard',!hit);
+    });
+  }
+  $('q').addEventListener('input',applySearch);
+  function setView(byTime){
+    $('v-group').setAttribute('aria-pressed',String(!byTime));
+    $('v-time').setAttribute('aria-pressed',String(byTime));
+    $('hdc-out').hidden=byTime; $('by-time').hidden=!byTime;
+    applySearch();
+  }
+  $('v-group').addEventListener('click',function(){setView(false);});
+  $('v-time').addEventListener('click',function(){setView(true);});
+
+  document.querySelector('.tabs').addEventListener('click',function(e){
+    var b=e.target.closest('button[data-pane]'); if(!b)return;
+    this.querySelectorAll('button').forEach(function(x){x.setAttribute('aria-selected',String(x===b));});
+    ['today','all','answers'].forEach(function(p){$('pane-'+p).classList.toggle('on',p===b.dataset.pane);});
+    window.scrollTo({top:0,behavior:'smooth'});
+  });
+
+  function finish(){
+    $('steps').style.display='none';
+    document.querySelector('.navbar').style.display='none';
+    $('results').classList.add('on');
+    $('progbar').style.width='100%';
+    $('restart').hidden=false;
+    buildResults();
+    window.scrollTo({top:0,behavior:'smooth'});
+  }
+
+  /* keep results live if the engine re-renders */
+  if(window.MutationObserver&&$('hdc-out')){
+    new MutationObserver(function(){
+      if($('results').classList.contains('on'))buildResults();
+      if(order[i]==='reveal')fillReveal();
+    }).observe($('hdc-out'),{childList:true,subtree:true});
+  }
+
+  /* ---------- body-fat sheet ---------- */
+  $('open-bf').addEventListener('click',function(){$('bf-sheet').classList.add('on');syncConditional();});
+  function closeSheet(){$('bf-sheet').classList.remove('on');}
+  $('bf-close').addEventListener('click',closeSheet);
+  $('bf-done').addEventListener('click',closeSheet);
+  $('bf-sheet').addEventListener('click',function(e){if(e.target===this)closeSheet();});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet();});
+  $('bfp-consent').addEventListener('change',function(){$('bfp-config').style.display=this.checked?'grid':'none';});
+
+  /* ---------- boot ---------- */
+  syncUnits(); syncConditional(); render();
+})();
+</script>
+</body>
+</html>
