@@ -61,6 +61,13 @@ button{font:inherit;color:inherit}
 
 /* ============================ steps ============================ */
 main{padding:26px 0 120px}
+/* With the action bar fixed to the bottom, a short step leaves a stranded band of
+   empty space. `margin-block:auto` centres a short step and collapses to 0 once the
+   content is taller than the viewport, so nothing is ever clipped. */
+@media (max-width:699px){
+  main{display:flex;flex-direction:column;min-height:calc(100dvh - 55px)}
+  .step.on{margin-block:auto;width:100%}
+}
 .step{display:none;animation:in .26s cubic-bezier(.2,.7,.3,1)}
 .step.on{display:block}
 @keyframes in{from{opacity:0;transform:translateY(7px)}to{opacity:1;transform:none}}
@@ -131,7 +138,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   backdrop-filter:saturate(180%) blur(14px);-webkit-backdrop-filter:saturate(180%) blur(14px);
   border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom)
 }
-.navbar-in{display:flex;align-items:center;gap:10px;padding:12px 0}
+.navbar-in{display:flex;align-items:center;gap:10px;padding:12px 20px}
 .btn{
   border:0;border-radius:var(--r-ctl);padding:15px 22px;font-size:16.5px;font-weight:650;
   cursor:pointer;min-height:52px;background:var(--accent);color:#fff;flex:1;transition:filter .15s
@@ -140,6 +147,16 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
 .btn[disabled]{opacity:.42;cursor:not-allowed;filter:none}
 .btn.ghost{background:none;color:var(--muted);border:1px solid var(--line2);flex:0 0 auto;padding:15px 18px}
 .btn.link{background:none;color:var(--muted);border:0;flex:0 0 auto;font-weight:550;font-size:15px;padding:15px 10px}
+/* Wide screens: a full-bleed fixed action bar looks heavy and strands empty space
+   above it, so let the buttons sit inline at a natural width.
+   (Declared after .btn so these win the cascade.) */
+@media (min-width:700px){
+  .navbar{position:static;background:none;border-top:0;backdrop-filter:none;-webkit-backdrop-filter:none}
+  .navbar-in{padding:4px 20px 72px}
+  main{padding-bottom:6px}
+  .btn{flex:0 0 auto;min-width:200px}
+  .btn.ghost,.btn.link{min-width:0}
+}
 
 .note{background:var(--surface2);border:1px solid var(--line);border-radius:14px;padding:14px 16px;font-size:14px;color:var(--muted);line-height:1.5}
 .note b{color:var(--ink);font-weight:620}
@@ -156,7 +173,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
 /* ============================ results ============================ */
 #results{display:none}
 #results.on{display:block}
-.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--surface2);border:1px solid var(--line);padding:4px;border-radius:var(--r-ctl);margin:4px 0 22px;position:sticky;top:56px;z-index:20}
+.tabs{display:grid;grid-auto-flow:column;grid-auto-columns:1fr;gap:4px;background:var(--surface2);border:1px solid var(--line);padding:4px;border-radius:var(--r-ctl);margin:4px 0 22px;position:sticky;top:52px;z-index:20}
 .tabs button{border:0;background:none;padding:11px 6px;border-radius:9px;font-size:14.5px;font-weight:550;color:var(--muted);cursor:pointer;min-height:44px}
 .tabs button[aria-selected="true"]{background:var(--surface);color:var(--ink);font-weight:650;box-shadow:0 1px 2px rgba(0,0,0,.07)}
 .pane{display:none}.pane.on{display:block}
@@ -430,12 +447,13 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   <div class="pane" id="pane-all">
     <div class="search">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/></svg>
-      <input id="q" type="search" placeholder="Search targets — protein, iron, sodium…" aria-label="Search targets">
+      <input id="q" type="search" placeholder="Search targets…" aria-label="Search targets">
     </div>
     <div class="viewtog" role="group" aria-label="Grouping">
       <button type="button" id="v-group" aria-pressed="true">By group</button>
       <button type="button" id="v-time" aria-pressed="false">By timescale</button>
     </div>
+    <p class="note" id="noresults" hidden>Nothing matches that. Try <b>protein</b>, <b>iron</b>, <b>sodium</b> — or clear the search.</p>
     <div id="hdc-out" class="tgt"></div>
     <div id="by-time" class="tgt" hidden></div>
   </div>
@@ -1070,6 +1088,23 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
       return '<div class="m"><div class="mk">'+c.name+(c.hz?' · '+c.hz:'')+'</div><div class="mv num">'+c.value+'</div></div>';
     }).join('');
   }
+  /* Presentation-only tidy of the engine's rendered output. The engine script is
+     byte-identical to the verified build and must stay that way, so anything that
+     reads oddly outside the guide is adjusted here in the DOM instead. */
+  function tidyOutput(){
+    var out=$('hdc-out'); if(!out)return;
+    // The legend says "hover a badge", which touch devices have no equivalent for —
+    // and the By-timescale view now explains each horizon in full.
+    var leg=out.querySelector('.hdc-hzleg'); if(leg)leg.classList.add('hidecard');
+    // "(see §21)" is a guide section number that means nothing on its own here.
+    var disc=out.querySelector('.hdc-disc');
+    if(disc&&!disc.dataset.tidied){
+      disc.innerHTML=disc.innerHTML.replace(/\(see\s*&sect;21\)|\(see\s*§21\)/g,
+        '(see the <a href="Healthiest-Diet-Guide.html" style="color:var(--accent)">full guide</a>)');
+      disc.dataset.tidied='1';
+    }
+  }
+
   function buildResults(){
     var c=find('Calories');
     if(c){$('t-kcal').textContent=(c.value.match(/[\d,]+/)||[''])[0]; $('t-band').textContent=(c.band||'').replace(/^±/,'± ');}
@@ -1143,10 +1178,30 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   function applySearch(){
     var q=($('q').value||'').trim().toLowerCase();
     var host=$('v-time').getAttribute('aria-pressed')==='true'?$('by-time'):$('hdc-out');
+
+    /* The 21 vitamins & minerals sit behind a collapsed <details>; without this a
+       search for "iron" matches a card the user can't see. */
+    var det=host.querySelector('details.hdc-more');
+    if(det){
+      if(q){ if(det.dataset.prev===undefined)det.dataset.prev=det.open?'1':'0'; det.open=true; }
+      else if(det.dataset.prev!==undefined){ det.open=det.dataset.prev==='1'; delete det.dataset.prev; }
+    }
+
+    var shown=0;
     host.querySelectorAll('.hdc-card').forEach(function(c){
       var hit=!q||c.textContent.toLowerCase().indexOf(q)>=0;
-      c.classList.toggle('hidecard',!hit);
+      c.classList.toggle('hidecard',!hit); if(hit)shown++;
     });
+    /* don't strand a section heading over an empty grid */
+    host.querySelectorAll('.hdc-grid').forEach(function(g){
+      var any=!!g.querySelector('.hdc-card:not(.hidecard)');
+      g.classList.toggle('hidecard',!any);
+      var p=g.previousElementSibling;
+      if(p&&p.classList.contains('tblurb')){p.classList.toggle('hidecard',!any);p=p.previousElementSibling;}
+      if(p&&p.classList.contains('hdc-sub'))p.classList.toggle('hidecard',!any);
+    });
+    if(det)det.classList.toggle('hidecard',!!q&&!det.querySelector('.hdc-card:not(.hidecard)'));
+    $('noresults').hidden=!(q&&shown===0);
   }
   $('q').addEventListener('input',applySearch);
   function setView(byTime){
@@ -1171,17 +1226,22 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
     $('results').classList.add('on');
     $('progbar').style.width='100%';
     $('restart').hidden=false;
-    buildResults();
+    tidyOutput(); buildResults();
     window.scrollTo({top:0,behavior:'smooth'});
   }
 
-  /* keep results live if the engine re-renders */
-  if(window.MutationObserver&&$('hdc-out')){
-    new MutationObserver(function(){
-      if($('results').classList.contains('on'))buildResults();
-      if(order[i]==='reveal')fillReveal();
-    }).observe($('hdc-out'),{childList:true,subtree:true});
+  /* Keep results live when the engine re-renders. tidyOutput() edits the same
+     subtree, so pause the observer around it to avoid re-entrancy. */
+  var mo=null;
+  function watch(){ if(mo&&$('hdc-out'))mo.observe($('hdc-out'),{childList:true,subtree:true}); }
+  function refresh(){
+    if(mo)mo.disconnect();
+    tidyOutput();
+    if($('results').classList.contains('on'))buildResults();
+    if(order[i]==='reveal')fillReveal();
+    watch();
   }
+  if(window.MutationObserver&&$('hdc-out')){ mo=new MutationObserver(refresh); watch(); }
 
   /* ---------- body-fat sheet ---------- */
   $('open-bf').addEventListener('click',function(){$('bf-sheet').classList.add('on');syncConditional();});
@@ -1193,7 +1253,8 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   $('bfp-consent').addEventListener('change',function(){$('bfp-config').style.display=this.checked?'grid':'none';});
 
   /* ---------- boot ---------- */
-  syncUnits(); syncConditional(); render();
+  /* the engine already rendered once before this script ran, so tidy that pass too */
+  syncUnits(); syncConditional(); tidyOutput(); render();
 })();
 </script>
 </body>
