@@ -31,6 +31,9 @@
 }
 *{box-sizing:border-box}
 html,body{margin:0;padding:0}
+/* An author `display` (e.g. .f{display:grid}) beats the UA rule for [hidden],
+   which silently left the imperial height field on screen next to the metric one. */
+[hidden]{display:none !important}
 body{
   background:var(--bg); color:var(--ink);
   font:400 17px/1.5 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
@@ -117,8 +120,8 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
 .opt[aria-pressed="true"] .tick{background:var(--accent);border-color:var(--accent)}
 .opt .tick svg{width:12px;height:12px;opacity:0}
 .opt[aria-pressed="true"] .tick svg{opacity:1}
-.opt .t{font-weight:600;font-size:16px;line-height:1.3}
-.opt .d{color:var(--muted);font-size:13.5px;line-height:1.4;margin-top:2px}
+.opt .t{display:block;font-weight:600;font-size:16px;line-height:1.3}
+.opt .d{display:block;color:var(--muted);font-size:13.5px;line-height:1.4;margin-top:3px}
 .opt.rec .t::after{content:"Recommended";margin-left:8px;font-size:10.5px;font-weight:700;letter-spacing:.05em;text-transform:uppercase;color:var(--accent);background:var(--accent-soft);border:1px solid color-mix(in srgb,var(--accent) 32%,transparent);padding:2px 7px;border-radius:999px;vertical-align:2px}
 
 /* chips */
@@ -229,14 +232,6 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
 .tgt .hdc-hint{color:var(--muted);font-size:15px}
 .hidecard{display:none !important}
 
-/* body-fat estimator sheet */
-.sheet{position:fixed;inset:0;z-index:60;display:none;align-items:flex-end;justify-content:center;background:rgba(10,20,15,.45)}
-.sheet.on{display:flex}
-.sheet-in{background:var(--bg);width:100%;max-width:660px;max-height:88vh;overflow-y:auto;border-radius:20px 20px 0 0;padding:22px 20px calc(28px + env(safe-area-inset-bottom));border:1px solid var(--line)}
-.sheet h3{margin:0 0 4px;font-size:20px;letter-spacing:-.015em}
-.sheet .close{position:sticky;top:0;float:right;background:var(--surface2);border:1px solid var(--line);border-radius:999px;width:34px;height:34px;cursor:pointer;color:var(--muted);font-size:17px;line-height:1}
-.bfcards{display:grid;grid-template-columns:1fr 1fr;gap:8px}
-.tape{display:grid;grid-template-columns:1fr 1fr;gap:10px;align-items:end}
 .engine-dom{display:none}
 </style>
 </head>
@@ -317,49 +312,28 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
         <label class="lab" for="hdc-w">Weight</label>
         <div class="suffix"><input class="in num" id="hdc-w" type="number" inputmode="decimal" placeholder="e.g. 72"><span class="u" id="wunit">kg</span></div>
       </div>
-      <div class="f">
-        <label class="lab" for="hdc-bf">Body fat % <span style="font-weight:400;color:var(--muted)">— optional</span></label>
-        <div class="suffix"><input class="in num" id="hdc-bf" type="number" inputmode="decimal" min="3" max="60" placeholder="skip if unsure"><span class="u">%</span></div>
-        <span class="hint">Only helps if it's a real measurement — a guess can make the numbers worse. <button type="button" class="btn link" id="open-bf" style="padding:0;color:var(--accent);font-weight:600;min-height:0">Estimate it →</button></span>
-      </div>
     </div>
-    <div class="note" style="margin-top:20px">Body fat % is just one input to the math — <b>not a health or worth score</b>. Leaving it blank is completely fine.</div>
   </section>
 
-  <!-- ============ 3 · daily activity ============ -->
+  <!-- ============ 3 · activity ============ -->
   <section class="step" data-step="activity">
     <p class="eyebrow">Step 3</p>
-    <h1>How much do you move day to day?</h1>
-    <p class="sub">Your job and lifestyle — <b>not</b> counting workouts. Those come next, added on top.</p>
-    <div class="opts" id="opt-neat" role="group" aria-label="Daily activity"></div>
+    <h1>How active are you?</h1>
+    <p class="sub">Pick the line that best describes a normal week — everything counts: your job, getting around, and any training.</p>
+    <div class="opts" id="opt-neat" role="group" aria-label="Activity level"></div>
   </section>
 
-  <!-- ============ 4 · workouts ============ -->
-  <section class="step" data-step="workouts">
-    <p class="eyebrow">Step 4</p>
-    <h1>Do you log workouts?</h1>
-    <p class="sub">Enter the calories you burn in a typical day of exercise. Leave it at 0 if you'd rather not track it.</p>
-    <div class="fields">
-      <div class="f">
-        <label class="lab" for="hdc-ex">Workout calories per day</label>
-        <div class="suffix"><input class="in num" id="hdc-ex" type="number" inputmode="numeric" min="0" max="3500" placeholder="0"><span class="u">kcal</span></div>
-        <span class="hint">Added on top of your daily activity — never counted twice.</span>
-      </div>
-    </div>
-    <div class="note" style="margin-top:20px">Watch and tracker estimates tend to run high. Treat this as a rough figure and adjust from your real weight trend over a few weeks.</div>
-  </section>
-
-  <!-- ============ 5 · goal ============ -->
+  <!-- ============ 4 · goal ============ -->
   <section class="step" data-step="goal">
-    <p class="eyebrow">Step 5</p>
+    <p class="eyebrow">Step 4</p>
     <h1>What are you aiming for?</h1>
     <p class="sub">You can change this any time — nothing here is locked in.</p>
     <div class="opts" id="opt-goal" role="group" aria-label="Goal"></div>
   </section>
 
-  <!-- ============ 6 · pace (conditional) ============ -->
+  <!-- ============ 5 · pace (conditional) ============ -->
   <section class="step" data-step="pace">
-    <p class="eyebrow">Step 6</p>
+    <p class="eyebrow">Step 5</p>
     <h1>How fast?</h1>
     <p class="sub">Slower protects muscle and is far easier to sustain. Anything above 1% of body weight per week isn't advised without a clinician.</p>
     <div class="opts" id="opt-pace" role="group" aria-label="Pace"></div>
@@ -476,6 +450,9 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   <select id="hdc-sex"><option value="female">Female</option><option value="male">Male</option></select>
   <select id="hdc-units"><option value="metric">Metric</option><option value="us">US</option></select>
   <span id="hdc-metric-h"></span><span id="hdc-us-h"></span><span id="hdc-w-unit">kg</span>
+  <!-- Not asked in the flow, but calc() reads both unguarded. Empty body fat = use
+       Mifflin–St Jeor from height/weight; 0 workout kcal = activity tier alone. -->
+  <input id="hdc-bf" type="number" value=""><input id="hdc-ex" type="number" value="0">
   <select id="hdc-neat">
     <option value="1.25">Mostly sitting (desk job)</option>
     <option value="1.45" selected>Lightly active (some walking/standing)</option>
@@ -508,46 +485,6 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
     <button class="btn" id="next">Start</button>
     <button class="btn link" id="skip" hidden>Skip</button>
   </div>
-</div>
-
-<!-- ===== body-fat estimator sheet ===== -->
-<div class="sheet" id="bf-sheet" role="dialog" aria-modal="true" aria-label="Estimate body fat">
- <div class="sheet-in">
-  <button class="close" id="bf-close" aria-label="Close">✕</button>
-  <h3>Estimate your body fat</h3>
-  <p class="sub" style="margin-bottom:18px">Rough estimates (±3–5%). The tape method is the most accurate and stays on your device.</p>
-
-  <h2 class="grp" style="margin-top:0">1 · Tape measure — most accurate</h2>
-  <div class="tape">
-    <div class="f"><label class="lab" for="bft-neck">Neck (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-neck" type="number" inputmode="decimal" placeholder="neck"></div>
-    <div class="f"><label class="lab" for="bft-waist">Waist (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-waist" type="number" inputmode="decimal" placeholder="at navel"></div>
-    <div class="f" id="bft-hipwrap"><label class="lab" for="bft-hip">Hips (<span class="bft-u">cm</span>)</label><input class="in num" id="bft-hip" type="number" inputmode="decimal" placeholder="widest"></div>
-    <div class="f" style="align-self:end"><button class="btn" id="bft-calc" style="min-height:52px">Estimate</button></div>
-  </div>
-  <div id="bft-out" style="margin-top:10px;font-weight:650;color:var(--accent)"></div>
-  <p class="hint" style="color:var(--muted);font-size:13px;margin-top:8px">US-Navy method: waist at the navel, neck just below the larynx<span class="bft-hiponly">, hips at the widest point</span>. ±3–4% vs a DEXA scan.</p>
-
-  <h2 class="grp">2 · Match the closest description</h2>
-  <div class="bfcards" id="hdc-bf-visual"></div>
-
-  <h2 class="grp">3 · From a photo (AI — optional)</h2>
-  <div class="note" style="background:var(--warn-soft);border-color:var(--warn-line);color:var(--warn)">
-    ⚠️ This is the one thing here that <b>leaves your device</b> — your photo is sent to whichever AI service you configure, and the estimate is <b>not medically validated</b>. The tape method above is more reliable.
-  </div>
-  <label class="chip" style="margin-top:12px;display:inline-flex;align-items:center;gap:9px;cursor:pointer">
-    <input id="bfp-consent" type="checkbox" style="width:20px;height:20px"> I understand and want to use it
-  </label>
-  <div id="bfp-config" style="display:none;margin-top:14px;display:grid;gap:10px">
-    <div class="f"><label class="lab" for="bfp-url">Vision API endpoint</label><input class="in" id="bfp-url" type="text" placeholder="https://openrouter.ai/api/v1/chat/completions"></div>
-    <div class="f"><label class="lab" for="bfp-model">Model</label><input class="in" id="bfp-model" type="text" placeholder="e.g. google/gemini-2.5-flash"></div>
-    <div class="f"><label class="lab" for="bfp-key">API key</label><input class="in" id="bfp-key" type="password" placeholder="stored only on this device"></div>
-    <div class="f"><label class="lab" for="bfp-front">Front photo</label><input class="in" id="bfp-front" type="file" accept="image/*"></div>
-    <div class="f"><label class="lab" for="bfp-side">Side photo (optional)</label><input class="in" id="bfp-side" type="file" accept="image/*"></div>
-    <button class="btn" id="bfp-go">Estimate from photos</button>
-    <div id="bfp-out" style="font-weight:650;color:var(--accent)"></div>
-  </div>
-  <button class="btn" id="bf-done" style="margin-top:20px">Done</button>
- </div>
 </div>
 
 <!-- ============ VERIFIED ENGINE (byte-identical to the 12.1M-profile-tested build) ============ -->
@@ -910,12 +847,14 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   var fire=function(el,t){el.dispatchEvent(new Event(t||'input',{bubbles:true}));};
 
   /* ---------- option data (mirrors the engine's real <select> values) ---------- */
+  /* One estimator covering the whole week — job, getting around, and training.
+     Values are the FAO/WHO and IOM physical-activity levels. */
   var NEAT=[
-    ['1.25','Mostly sitting','Desk job, driving, mostly seated day'],
-    ['1.45','Lightly active','Some walking and standing through the day'],
-    ['1.7','On your feet most of the day','Nurse, server, retail, teacher'],
-    ['1.9','Physical / manual-labor job','Construction, landscaping, warehouse'],
-    ['2.2','Very heavy labor','Sustained hard physical work all day']
+    ['1.25','Mostly sitting','Desk job or mostly seated, little or no exercise'],
+    ['1.45','Lightly active','Some walking through the day, or light exercise 1–3 days a week'],
+    ['1.7','Moderately active','On your feet a lot, or you train most days'],
+    ['1.9','Very active','Physical job, or hard training most days'],
+    ['2.2','Extremely active','Heavy manual work, or training twice a day']
   ];
   var GOALS=[
     ['maintain','Maintain & get healthier','Hold your weight and improve diet quality',true],
@@ -989,18 +928,15 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
     var us=$('hdc-units').value==='us';
     $('wrap-cm').hidden=us; $('wrap-ftin').hidden=!us;
     $('wunit').textContent=us?'lb':'kg';
-    document.querySelectorAll('.bft-u').forEach(function(e){e.textContent=us?'in':'cm';});
   }
   function syncConditional(){
     var fem=$('hdc-sex').value==='female';
     $('life-female').hidden=!fem;
     $('wrap-tri').hidden=!(fem&&$('hdc-preg').checked);
-    document.querySelectorAll('.bft-hiponly').forEach(function(e){e.style.display=fem?'':'none';});
-    var hw=$('bft-hipwrap'); if(hw)hw.style.display=fem?'':'none';
   }
 
   /* ---------- step flow ---------- */
-  var order=['welcome','basics','body','activity','workouts','goal','pace','reveal','life','diet','health'];
+  var order=['welcome','basics','body','activity','goal','pace','reveal','life','diet','health'];
   var i=0;
   var stepEls={}; document.querySelectorAll('.step').forEach(function(s){stepEls[s.dataset.step]=s;});
 
@@ -1029,9 +965,20 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
     render();
     window.scrollTo({top:0,behavior:'smooth'});
   }
+  /* Pace only appears for lose/gain, so the numbering has to count the steps
+     actually being shown rather than trust a hard-coded label. */
+  var NUM_STEPS=['basics','body','activity','goal','pace'];
+  function paintEyebrow(){
+    var vis=NUM_STEPS.filter(shown), idx=vis.indexOf(order[i]);
+    if(idx<0)return;
+    var el=stepEls[order[i]].querySelector('.eyebrow');
+    if(el)el.textContent='Step '+(idx+1)+' of '+vis.length;
+  }
   function render(){
     var name=order[i], last=i>=order.length-1;
-    $('progbar').style.width=Math.round((i/(order.length-1))*100)+'%';
+    var vis=order.filter(shown), vi=vis.indexOf(name);
+    $('progbar').style.width=Math.round((vi/Math.max(1,vis.length-1))*100)+'%';
+    paintEyebrow();
     $('back').hidden=(i===0);
     $('next').textContent=name==='welcome'?'Start':(last?'See all my targets':(name==='reveal'?'Keep going':'Continue'));
     $('next').disabled=!valid(name);
@@ -1121,9 +1068,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
       ['Age',($('hdc-age').value||'—')+' years','basics'],
       ['Height',us?(($('hdc-h-ft').value||'0')+' ft '+($('hdc-h-in').value||'0')+' in'):(($('hdc-h-cm').value||'—')+' cm'),'body'],
       ['Weight',($('hdc-w').value||'—')+' '+(us?'lb':'kg'),'body'],
-      ['Body fat',$('hdc-bf').value?($('hdc-bf').value+'%'):'Not given','body'],
-      ['Daily activity',neatLab,'activity'],
-      ['Workouts',($('hdc-ex').value||'0')+' kcal/day','workouts'],
+      ['Activity',neatLab,'activity'],
       ['Goal',goalLab,'goal']
     ];
     if($('hdc-goal').value==='lose'||$('hdc-goal').value==='gain')
@@ -1243,14 +1188,6 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   }
   if(window.MutationObserver&&$('hdc-out')){ mo=new MutationObserver(refresh); watch(); }
 
-  /* ---------- body-fat sheet ---------- */
-  $('open-bf').addEventListener('click',function(){$('bf-sheet').classList.add('on');syncConditional();});
-  function closeSheet(){$('bf-sheet').classList.remove('on');}
-  $('bf-close').addEventListener('click',closeSheet);
-  $('bf-done').addEventListener('click',closeSheet);
-  $('bf-sheet').addEventListener('click',function(e){if(e.target===this)closeSheet();});
-  document.addEventListener('keydown',function(e){if(e.key==='Escape')closeSheet();});
-  $('bfp-consent').addEventListener('change',function(){$('bfp-config').style.display=this.checked?'grid':'none';});
 
   /* ---------- boot ---------- */
   /* the engine already rendered once before this script ran, so tidy that pass too */
