@@ -323,7 +323,15 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
     <div class="opts" id="opt-neat" role="group" aria-label="Activity level"></div>
   </section>
 
-  <!-- ============ 4 · goal ============ -->
+  <!-- ============ 4 · eating style ============ -->
+  <section class="step" data-step="style">
+    <p class="eyebrow">Step 4</p>
+    <h1>How do you like to eat?</h1>
+    <p class="sub">This shapes which foods your targets are built from. Balanced is a good default — the others are preferences, not upgrades.</p>
+    <div class="opts" id="opt-style" role="group" aria-label="Eating style"></div>
+  </section>
+
+  <!-- ============ 5 · goal ============ -->
   <section class="step" data-step="goal">
     <p class="eyebrow">Step 4</p>
     <h1>What are you aiming for?</h1>
@@ -460,6 +468,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
     <option value="1.9">Physical / manual-labor job</option>
     <option value="2.2">Very heavy labor</option>
   </select>
+  <select id="hdc-style"><option value="balanced" selected>Balanced</option><option value="mediterranean">Mediterranean</option><option value="wholefood">Whole-food focus</option><option value="flexitarian">Flexitarian</option><option value="pescatarian">Pescatarian</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="lowcarb">Low-carb</option><option value="keto">Keto</option><option value="paleo">Paleo</option></select>
   <select id="hdc-goal">
     <option value="lose">Lose fat</option><option value="gain">Gain (build muscle)</option>
     <option value="recomp">Recomp (same weight)</option><option value="maintain" selected>Maintain &amp; get healthier</option>
@@ -554,7 +563,13 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   var bf=num(g("hdc-bf").value),neat=parseFloat(g("hdc-neat").value),ex=num(g("hdc-ex").value),goalReq=g("hdc-goal").value,pace=g("hdc-pace").value;
   var preg=ck("hdc-preg"),lac=ck("hdc-lac"),tri=parseInt(g("hdc-tri").value,10),smoke=ck("hdc-smoke");
   if(sex!=="female"){preg=false;lac=false;}
-  var vegan=ck("r-vegan"),rveg=ck("r-veg"),dairyf=ck("r-dairy"),glutenf=ck("r-gluten"),nutA=ck("r-nut"),fishA=ck("r-fish"),eggA=ck("r-egg"),soyA=ck("r-soy"),sesA=ck("r-sesame"),plant=vegan||rveg,dairyfEff=dairyf||vegan;
+  var styleEl=g("hdc-style"),style=styleEl?(styleEl.value||"balanced"):"balanced",styleNote="";
+  var vegan=ck("r-vegan"),rveg=ck("r-veg"),dairyf=ck("r-dairy"),glutenf=ck("r-gluten"),nutA=ck("r-nut"),fishA=ck("r-fish"),eggA=ck("r-egg"),soyA=ck("r-soy"),sesA=ck("r-sesame");
+  // Eating style feeds the SAME switches the restriction checkboxes drive, via effective
+  // flags — never by mutating the boxes, so an explicit restriction always still wins.
+  if(style==="vegan")vegan=true; else if(style==="vegetarian")rveg=true;
+  if(style==="pescatarian"&&fishA){style="vegetarian";rveg=true;styleNote=" Your fish allergy overrides a pescatarian style, so this is planned as vegetarian.";}
+  var plant=vegan||rveg,dairyfEff=dairyf||vegan||style==="paleo";
   var hbp=ck("d-hbp"),t2d=ck("d-t2d"),ldl=ck("d-ldl"),ckd=ck("d-ckd"),gout=ck("d-gout"),ibs=ck("d-ibs"),nafld=ck("d-nafld"),bone=ck("d-bone"),gerd=ck("d-gerd"),hf=ck("d-hf"),glp1=ck("d-glp1");
   var out=g("hdc-out");
   var _valid=(age>0&&cm>0&&kg>0),_rb=document.querySelector(".hdc-refine-box");if(_rb)_rb.style.display=_valid?"":"none";
@@ -604,6 +619,23 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   else if(older){pLo=1.0*pbasis;pHi=1.2*pbasis;pn="older adult: 1.0–1.2 g/kg"+pbNote;}
   else{pLo=1.2*pbasis;pHi=1.6*pbasis;pn="general adult: 1.2–1.6 g/kg (2025–2030 DGA, adults under 75; a debated jump)"+pbNote;}
   var meals=older?3:4,perLo=Math.round(pLo/meals),perHi=Math.round(pHi/meals);
+  // ---- eating-style safety gates: a carb-restricting style is downgraded wherever a
+  // carbohydrate floor or a clinical caution applies. Always announced, never silent. ----
+  if(style==="keto"||style==="lowcarb"){
+   var why="";
+   if(preg)why="pregnancy needs at least 175 g of carbohydrate a day (DRI)";
+   else if(lac)why="breastfeeding needs at least 210 g of carbohydrate a day (DRI)";
+   else if(minor)why="carb-restricted plans under 18 need a clinician";
+   else if(safety)why="the safety note above takes priority";
+   else if(ckd)why="kidney disease makes a high-protein, high-fat pattern risky without a renal dietitian";
+   if(why){style="balanced";styleNote=" Switched to a balanced split because "+why+".";}
+  }
+  if(style==="keto"&&vegan){style="lowcarb";styleNote=" A vegan ketogenic plan is very hard to make nutritionally adequate, so this is planned as low-carb instead.";}
+  if(styleNote)calNote+=styleNote;   // calNote is assembled above, so append once the gates have run
+  // Total-carb pin (Feinman 2015 / StatPearls bands). 0 = no pin, i.e. carbs stay the remainder.
+  var carbPin=0;
+  if(style==="keto")carbPin=Math.max(20,Math.min(50,Math.round(0.10*goalCal/4)));
+  else if(style==="lowcarb")carbPin=Math.max(50,Math.min(130,Math.round(0.20*goalCal/4)));
   // MACROS as a coherent partition of goalCal: protein target, fat from a 0.8 g/kg floor up to 35%, carbs = the remainder
   var pMid=(pLo+pHi)/2;
   var fatMin=Math.round(0.8*pbasis);
@@ -612,10 +644,19 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   // macros always sum to the calorie total (fixes a rare edge: obese + very low BMR + aggressive cut).
   var pfMinCal=Math.ceil((pMid*4+fatMin*9)/10)*10;
   if(goalCal<pfMinCal){goalCal=pfMinCal;calNote+=" Raised to your protein + essential-fat minimum (~"+pfMinCal+" kcal) — you can't safely cut below that while keeping muscle.";}
-  var fatHi=Math.round(0.35*goalCal/9);if(fatHi<fatMin)fatHi=fatMin;
+  var fatCeil=(style==="mediterranean")?0.40:0.35;   // PREDIMED arms ran ~40–41%E
+  var fatHi=Math.round(fatCeil*goalCal/9);if(fatHi<fatMin)fatHi=fatMin;
   var fatCap=Math.floor((goalCal-pMid*4)/9);if(fatCap>=fatMin&&fatHi>fatCap)fatHi=fatCap;
-  var carbHi=Math.round((goalCal-pMid*4-fatMin*9)/4),carbLo=Math.round((goalCal-pMid*4-fatHi*9)/4);
-  if(carbHi<0)carbHi=0;if(carbLo<0)carbLo=0;if(carbLo>carbHi){var tt=carbLo;carbLo=carbHi;carbHi=tt;}
+  var fatLo=fatMin,carbHi,carbLo;
+  if(carbPin){
+   // Carbs pinned, so fat takes the remainder and the %-of-energy ceiling is waived.
+   carbLo=carbHi=carbPin;
+   var fatRem=Math.round((goalCal-pMid*4-carbPin*4)/9);
+   fatLo=fatHi=Math.max(fatMin,fatRem);
+  }else{
+   carbHi=Math.round((goalCal-pMid*4-fatMin*9)/4);carbLo=Math.round((goalCal-pMid*4-fatHi*9)/4);
+   if(carbHi<0)carbHi=0;if(carbLo<0)carbLo=0;if(carbLo>carbHi){var tt=carbLo;carbLo=carbHi;carbHi=tt;}
+  }
   var fiber=Math.max(25,Math.round(14*goalCal/1000));
   var satPct=(ldl||t2d)?0.06:0.10,satg=Math.round(satPct*goalCal/9),satOpt=Math.round(0.07*goalCal/9);
   var sugarPct=(t2d||nafld)?0.05:0.10,sugE=Math.round(sugarPct*goalCal/4),sugAHA=(age<=18)?25:(sex==="female"?25:36),sug=Math.min(sugE,sugAHA),sugAHAbind=(sugarPct!==0.05&&sugAHA<sugE);
@@ -658,8 +699,13 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   var calLo=Math.round(goalCal*0.9/10)*10,calHi=Math.round(goalCal*1.1/10)*10;
   h+=card("Calories",goalCal+' kcal/day <span class="hdc-band">±~10% &middot; likely '+calLo+'&ndash;'+calHi+'</span>',calNote);
   h+=card("Protein",rng(Math.round(pLo),Math.round(pHi))+" g/day","~"+rng(perLo,perHi)+" g per meal across ~"+meals+" meals (≥~0.4 g/kg/meal helps muscle synthesis) — "+pn+". For longevity, make plant proteins (beans, lentils, soy, nuts) the base and prefer fish & poultry over red and processed meat — plant protein tracks with lower mortality.");
-  h+=card("Carbohydrate",carbLo+"–"+carbHi+" g/day","the remainder after protein & fat — your main flex lever (more carbs if you eat less fat or train hard; fewer if insulin-resistant)"+((carbHi<70)?". Low here because protein + essential fat nearly fill this calorie level — normal on an aggressive cut":"")+".");
-  h+=card("Total fat",fatMin+"–"+fatHi+" g/day","from a ~0.8 g/kg essential floor (~"+fatMin+" g) up to ~35% of calories; mostly unsaturated. Fat and carbs trade off.");
+  h+=card("Carbohydrate",carbPin?("≤ "+carbPin+" g/day"):(carbLo+"–"+carbHi+" g/day"),
+   carbPin?((style==="keto"?"a ketogenic cap (<10% of calories, 20–50 g) — total carbs, not net. Expect fiber to be the hard part: build the allowance from non-starchy vegetables, nuts and seeds"
+                          :"a low-carb cap (~20% of calories, held inside the 50–130 g band) — keep the carbs you do eat intact: vegetables, berries, legumes, oats")+". The evidence is that this matches, not beats, other patterns at equal calories — pick it if it suits you, not because it's metabolically special.")
+   :("the remainder after protein & fat — your main flex lever (more carbs if you eat less fat or train hard; fewer if insulin-resistant)"+((carbHi<70)?". Low here because protein + essential fat nearly fill this calorie level — normal on an aggressive cut":"")+"."));
+  h+=card("Total fat",(fatLo===fatHi?(fatLo+" g/day"):(fatLo+"–"+fatHi+" g/day")),
+   carbPin?("fat takes the remaining energy once carbs are capped (~"+Math.round(fatLo*9/goalCal*100)+"% of calories). Favour olive oil, nuts, seeds, avocado and fish over butter and processed meat — the saturated-fat ceiling below still applies.")
+   :("from a ~0.8 g/kg essential floor (~"+fatMin+" g) up to ~"+Math.round(fatCeil*100)+"% of calories; mostly unsaturated. Fat and carbs trade off."+(style==="mediterranean"?" Raised to 40% here — that's what the Mediterranean trial arms actually ate, mostly as olive oil and nuts.":"")));
   h+=card("Omega-3 (EPA+DHA)","250–500 mg/day",((fishA||plant)?"no fish → algal oil":"oily fish 2×/wk or algal oil")+dhaAdd+(ldl?" — with established heart disease, ~1,000 mg/day is reasonable (AHA)":"")+".");
   h+=card("Omega-3 (ALA)",ala+" g/day","the plant omega-3 (AI): walnuts, chia, flax, canola"+(plant?" — extra important plant-based; conversion to EPA/DHA is inefficient, so consider algal oil too":"")+".");
   h+=card("Fiber","~"+fiber+" g/day","14 g per 1,000 kcal, with a 25 g floor; 25–29 g is the sweet spot for lowest disease risk (Reynolds, Lancet 2019) and benefit keeps rising toward ~35 g — bigger/very active eaters aim the upper end; ramp +5 g/week"+(ibs?" — but if IBS is flaring, trial low-FODMAP first":"")+".");
@@ -670,10 +716,13 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   lh+=card("Dietary cholesterol",(ldl?"< 200 mg/day":"< 300 mg/day"),(ldl?"tightened for high LDL — ":"no formal US limit since 2015; keep low — ")+"it travels with saturated fat; eggs in moderation are fine for most.");
   lh+=card("Sodium","< "+sodium+" mg/day",sodNote+". Athletes lose 0.5–1.5 g/L sweat.");
   fh+=card("Vegetables &amp; fruit","400 → "+prodHi+" g/day","400 g is the floor; ~800 g/day is the point of maximum risk reduction (Aune 2017) — a stretch target, and any increase toward it helps. Scaled to your "+goalCal+" kcal; variety over count.");
-  fh+=card("Whole grains","≥ "+wgOz+" oz-eq/day","at least half your grains whole (DGA); ~90 g/day (≈3 oz-eq) is where risk reduction is greatest — oats, brown rice, whole-wheat, quinoa; 1 oz-eq ≈ 1 slice bread or ½ cup cooked"+(glutenf?". GF: oats (certified), brown rice, quinoa, buckwheat, millet":"")+".");
-  if(!fishA&&!plant)fh+=card("Fish &amp; seafood","2–3 servings/wk","8–12 oz weekly, favoring oily fish (salmon, sardines, trout); 2–4/wk is optimal — beyond ~5/wk adds no benefit and raises mercury exposure"+(preg?" — pregnancy: low-mercury choices only; skip shark/swordfish/king mackerel/tilefish":"")+".");
+  if(style==="keto")fh+=card("Non-starchy vegetables","every meal","grains are out on a ketogenic plan, so leafy greens, cruciferous veg, courgette, peppers and mushrooms have to carry the fiber and potassium grains normally would — this is the hardest part of keto to get right.","day");
+  else if(style==="paleo")fh+=card("Starchy tubers &amp; squash","≈ "+wgOz+" servings/day","paleo drops grains, so potatoes, sweet potatoes, winter squash and plantains take over that energy role (1 serving ≈ 1 medium potato). The swap costs you the fiber and the B-vitamins fortified grains supply.");
+  else fh+=card("Whole grains",(style==="lowcarb"?"≤ 2 oz-eq/day":("≥ "+wgOz+" oz-eq/day")),(style==="lowcarb"?"kept low but not removed — intact grains (steel-cut oats, barley, quinoa) are the ones worth spending a limited carb allowance on":"at least half your grains whole (DGA); ~90 g/day (≈3 oz-eq) is where risk reduction is greatest — oats, brown rice, whole-wheat, quinoa; 1 oz-eq ≈ 1 slice bread or ½ cup cooked")+(glutenf?". GF: oats (certified), brown rice, quinoa, buckwheat, millet":"")+".");
+  if(!fishA&&!plant)fh+=card("Fish &amp; seafood",((style==="pescatarian"||style==="mediterranean")?"3 servings/wk":"2–3 servings/wk"),"8–12 oz weekly, favoring oily fish (salmon, sardines, trout); 2–4/wk is optimal — beyond ~5/wk adds no benefit and raises mercury exposure"+(preg?" — pregnancy: low-mercury choices only; skip shark/swordfish/king mackerel/tilefish":"")+".");
   fh+=card("Legumes, nuts &amp; seeds",(nutA?"legumes ~1.5+ cup/wk":"~1.5+ cup legumes + ~5 oz nuts/wk"),"beans, lentils, chickpeas"+(nutA?" (nut allergy → seeds: pumpkin, sunflower, chia)":", plus a small daily handful of nuts/seeds")+" — protein, fiber, minerals.");
-  if(!plant)fh+=card("Red &amp; processed meat","red ~350 (≤500) g/wk · processed ~0","healthiest is ~350 g/wk cooked (≈3 palm-size portions); 500 g is the ceiling (WCRF). Processed meat (bacon, sausage, deli) has no safe level (IARC Group 1) — keep near zero. Ultra-processed foods overall track with higher mortality, so favor whole/minimally-processed"+(gout?" — gout: organ meats and game are the highest-purine, limit red meat tightly":"")+".");
+  if(!plant&&style==="pescatarian")fh+=card("Red &amp; processed meat","none — fish instead","a pescatarian plan drops meat and poultry; fish, eggs, dairy and legumes carry the protein.");
+  else if(!plant)fh+=card("Red &amp; processed meat",(style==="flexitarian"?"red ≤200 g/wk · processed ~0":"red ~350 (≤500) g/wk · processed ~0"),"healthiest is ~350 g/wk cooked (≈3 palm-size portions); 500 g is the ceiling (WCRF). Processed meat (bacon, sausage, deli) has no safe level (IARC Group 1) — keep near zero. Ultra-processed foods overall track with higher mortality, so favor whole/minimally-processed"+(gout?" — gout: organ meats and game are the highest-purine, limit red meat tightly":"")+".");
   h+=card("Water (drinks)",wlo.toFixed(1)+"–"+whi.toFixed(1)+" L/day",waterNote);
   lh+=card("Caffeine","≤ "+caf+" mg/day",preg?"pregnancy ≤200 mg (ACOG).":(lac?"breastfeeding ~300 mg (CDC); some advise ≤200, and less for a preterm or newborn baby.":(age<=18?"teens (through 18): AAP caps ~100 mg and discourages caffeine — skip energy drinks.":"≤400 mg (~4 cups); less if sensitive.")));
   var zeroAlc=preg||lac||minor||nafld;
@@ -891,6 +940,21 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   function paint(host,val){
     host.querySelectorAll('.opt').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===val));});
   }
+  /* Eating styles, worded as preferences rather than rankings. Balanced is the neutral
+     default; the honest-evidence line for each lives on the target cards themselves. */
+  var STYLES=[
+    ['balanced','Balanced','No foods off the table — the default',true],
+    ['mediterranean','Mediterranean','Olive oil, fish, legumes, whole grains. The best-evidenced pattern',false],
+    ['wholefood','Whole-food focus','Minimally processed, cooked from scratch',false],
+    ['flexitarian','Flexitarian','Mostly plants, meat now and then',false],
+    ['pescatarian','Pescatarian','Fish and seafood, no meat or poultry',false],
+    ['vegetarian','Vegetarian','No meat or fish; eggs and dairy fine',false],
+    ['vegan','Vegan','No animal foods at all',false],
+    ['lowcarb','Low-carb','Carbs held to roughly 50–130 g a day',false],
+    ['keto','Keto','Carbs under ~50 g a day, fat-led',false],
+    ['paleo','Paleo','No grains, legumes or dairy',false]
+  ];
+  fillOpts($('opt-style'),STYLES,'hdc-style');
   fillOpts($('opt-neat'),NEAT,'hdc-neat');
   fillOpts($('opt-goal'),GOALS,'hdc-goal');
   fillOpts($('opt-pace'),PACES,'hdc-pace');
@@ -936,7 +1000,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   }
 
   /* ---------- step flow ---------- */
-  var order=['welcome','basics','body','activity','goal','pace','reveal','life','diet','health'];
+  var order=['welcome','basics','body','activity','style','goal','pace','reveal','life','diet','health'];
   var i=0;
   var stepEls={}; document.querySelectorAll('.step').forEach(function(s){stepEls[s.dataset.step]=s;});
 
@@ -967,7 +1031,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   }
   /* Pace only appears for lose/gain, so the numbering has to count the steps
      actually being shown rather than trust a hard-coded label. */
-  var NUM_STEPS=['basics','body','activity','goal','pace'];
+  var NUM_STEPS=['basics','body','activity','style','goal','pace'];
   function paintEyebrow(){
     var vis=NUM_STEPS.filter(shown), idx=vis.indexOf(order[i]);
     if(idx<0)return;
@@ -1069,6 +1133,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
       ['Height',us?(($('hdc-h-ft').value||'0')+' ft '+($('hdc-h-in').value||'0')+' in'):(($('hdc-h-cm').value||'—')+' cm'),'body'],
       ['Weight',($('hdc-w').value||'—')+' '+(us?'lb':'kg'),'body'],
       ['Activity',neatLab,'activity'],
+      ['Eating style',($('hdc-style').selectedOptions[0]||{}).textContent||'Balanced','style'],
       ['Goal',goalLab,'goal']
     ];
     if($('hdc-goal').value==='lose'||$('hdc-goal').value==='gain')

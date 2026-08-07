@@ -323,7 +323,15 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
     <div class="opts" id="opt-neat" role="group" aria-label="Activity level"></div>
   </section>
 
-  <!-- ============ 4 · goal ============ -->
+  <!-- ============ 4 · eating style ============ -->
+  <section class="step" data-step="style">
+    <p class="eyebrow">Step 4</p>
+    <h1>How do you like to eat?</h1>
+    <p class="sub">This shapes which foods your targets are built from. Balanced is a good default — the others are preferences, not upgrades.</p>
+    <div class="opts" id="opt-style" role="group" aria-label="Eating style"></div>
+  </section>
+
+  <!-- ============ 5 · goal ============ -->
   <section class="step" data-step="goal">
     <p class="eyebrow">Step 4</p>
     <h1>What are you aiming for?</h1>
@@ -460,6 +468,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
     <option value="1.9">Physical / manual-labor job</option>
     <option value="2.2">Very heavy labor</option>
   </select>
+  <select id="hdc-style"><option value="balanced" selected>Balanced</option><option value="mediterranean">Mediterranean</option><option value="wholefood">Whole-food focus</option><option value="flexitarian">Flexitarian</option><option value="pescatarian">Pescatarian</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="lowcarb">Low-carb</option><option value="keto">Keto</option><option value="paleo">Paleo</option></select>
   <select id="hdc-goal">
     <option value="lose">Lose fat</option><option value="gain">Gain (build muscle)</option>
     <option value="recomp">Recomp (same weight)</option><option value="maintain" selected>Maintain &amp; get healthier</option>
@@ -541,6 +550,21 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   function paint(host,val){
     host.querySelectorAll('.opt').forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.v===val));});
   }
+  /* Eating styles, worded as preferences rather than rankings. Balanced is the neutral
+     default; the honest-evidence line for each lives on the target cards themselves. */
+  var STYLES=[
+    ['balanced','Balanced','No foods off the table — the default',true],
+    ['mediterranean','Mediterranean','Olive oil, fish, legumes, whole grains. The best-evidenced pattern',false],
+    ['wholefood','Whole-food focus','Minimally processed, cooked from scratch',false],
+    ['flexitarian','Flexitarian','Mostly plants, meat now and then',false],
+    ['pescatarian','Pescatarian','Fish and seafood, no meat or poultry',false],
+    ['vegetarian','Vegetarian','No meat or fish; eggs and dairy fine',false],
+    ['vegan','Vegan','No animal foods at all',false],
+    ['lowcarb','Low-carb','Carbs held to roughly 50–130 g a day',false],
+    ['keto','Keto','Carbs under ~50 g a day, fat-led',false],
+    ['paleo','Paleo','No grains, legumes or dairy',false]
+  ];
+  fillOpts($('opt-style'),STYLES,'hdc-style');
   fillOpts($('opt-neat'),NEAT,'hdc-neat');
   fillOpts($('opt-goal'),GOALS,'hdc-goal');
   fillOpts($('opt-pace'),PACES,'hdc-pace');
@@ -586,7 +610,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   }
 
   /* ---------- step flow ---------- */
-  var order=['welcome','basics','body','activity','goal','pace','reveal','life','diet','health'];
+  var order=['welcome','basics','body','activity','style','goal','pace','reveal','life','diet','health'];
   var i=0;
   var stepEls={}; document.querySelectorAll('.step').forEach(function(s){stepEls[s.dataset.step]=s;});
 
@@ -617,7 +641,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
   }
   /* Pace only appears for lose/gain, so the numbering has to count the steps
      actually being shown rather than trust a hard-coded label. */
-  var NUM_STEPS=['basics','body','activity','goal','pace'];
+  var NUM_STEPS=['basics','body','activity','style','goal','pace'];
   function paintEyebrow(){
     var vis=NUM_STEPS.filter(shown), idx=vis.indexOf(order[i]);
     if(idx<0)return;
@@ -719,6 +743,7 @@ h2.grp{font-size:12px;font-weight:700;letter-spacing:.08em;text-transform:upperc
       ['Height',us?(($('hdc-h-ft').value||'0')+' ft '+($('hdc-h-in').value||'0')+' in'):(($('hdc-h-cm').value||'—')+' cm'),'body'],
       ['Weight',($('hdc-w').value||'—')+' '+(us?'lb':'kg'),'body'],
       ['Activity',neatLab,'activity'],
+      ['Eating style',($('hdc-style').selectedOptions[0]||{}).textContent||'Balanced','style'],
       ['Goal',goalLab,'goal']
     ];
     if($('hdc-goal').value==='lose'||$('hdc-goal').value==='gain')
