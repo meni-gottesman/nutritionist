@@ -710,7 +710,7 @@ tbody tr:nth-child(even){background:#f7faf8;}
 <label>Daily activity <span style="font-weight:400">(not counting workouts)</span><select id="hdc-neat"><option value="1.25">Mostly sitting (desk job)</option><option value="1.45" selected>Lightly active (some walking/standing)</option><option value="1.7">On your feet most of the day</option><option value="1.9">Physical / manual-labor job</option><option value="2.2">Very heavy labor</option></select></label>
 <label>Workout calories/day <span style="font-weight:400">(added on top)</span><input id="hdc-ex" type="number" inputmode="numeric" min="0" max="3500" placeholder="0"></label>
 <label>Goal<select id="hdc-goal"><option value="lose">Lose fat</option><option value="gain">Gain (build muscle)</option><option value="recomp">Recomp (same weight)</option><option value="maintain" selected>Maintain &amp; get healthier</option></select></label>
-<label>Eating style<select id="hdc-style"><option value="balanced" selected>Balanced</option><option value="mediterranean">Mediterranean</option><option value="wholefood">Whole-food focus</option><option value="flexitarian">Flexitarian</option><option value="pescatarian">Pescatarian</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="lowcarb">Low-carb</option><option value="keto">Keto</option><option value="paleo">Paleo</option></select></label>
+<label>Eating style<select id="hdc-style"><option value="balanced" selected>Balanced</option><option value="mediterranean">Mediterranean</option><option value="wholefood">Whole-food focus</option><option value="flexitarian">Flexitarian</option><option value="pescatarian">Pescatarian</option><option value="vegetarian">Vegetarian</option><option value="vegan">Vegan</option><option value="lowcarb">Low-carb</option><option value="keto">Keto</option><option value="paleo">Paleo</option><option value="highprotein">High protein</option><option value="lowfat">Low fat</option></select></label>
 <label id="hdc-pacelbl">Pace<select id="hdc-pace"><option value="gentle">Gentle</option><option value="moderate" selected>Moderate</option><option value="aggressive">Aggressive</option></select></label>
 <label class="hdc-chk" id="hdc-preglbl"><input id="hdc-preg" type="checkbox"> Pregnant</label>
 <label id="hdc-trilbl">Trimester<select id="hdc-tri" disabled><option value="1">1st</option><option value="2">2nd</option><option value="3">3rd</option></select></label>
@@ -915,6 +915,13 @@ tbody tr:nth-child(even){background:#f7faf8;}
   else if(heavy){pLo=1.6*pbasis;pHi=2.2*pbasis;pn="building / very active: 1.6–2.2 g/kg"+pbNote;}
   else if(older){pLo=1.0*pbasis;pHi=1.2*pbasis;pn="older adult: 1.0–1.2 g/kg"+pbNote;}
   else{pLo=1.2*pbasis;pHi=1.6*pbasis;pn="general adult: 1.2–1.6 g/kg (2025–2030 DGA, adults under 75; a debated jump)"+pbNote;}
+  // High-protein style RAISES a floor — it never lowers what the goal path already set,
+  // and pregnancy/lactation/CKD have already claimed the target above, so they win.
+  if(style==="highprotein"&&!preg&&!lac&&!ckd){
+   var hpLo=1.6*pbasis,hpHi=2.2*pbasis;
+   if(pLo<hpLo)pLo=hpLo; if(pHi<hpHi)pHi=hpHi;
+   pn="high-protein: 1.6–2.2 g/kg"+pbNote+" — the best-supported reason to pick a style: it blunts hunger per calorie, protects lean mass in a deficit, and supports bone and muscle with age"+(gout?". With gout, take it from dairy, eggs, soy and legumes rather than red meat, organ meat or shellfish":"")+(bone?". Useful alongside your calcium and vitamin D targets for bone":"");
+  }
   var meals=older?3:4,perLo=Math.round(pLo/meals),perHi=Math.round(pHi/meals);
   // ---- eating-style safety gates: a carb-restricting style is downgraded wherever a
   // carbohydrate floor or a clinical caution applies. Always announced, never silent. ----
@@ -928,6 +935,8 @@ tbody tr:nth-child(even){background:#f7faf8;}
    if(why){style="balanced";styleNote=" Switched to a balanced split because "+why+".";}
   }
   if(style==="keto"&&vegan){style="lowcarb";styleNote=" A vegan ketogenic plan is very hard to make nutritionally adequate, so this is planned as low-carb instead.";}
+  if(style==="highprotein"&&ckd){style="balanced";styleNote=" Switched to a balanced split — kidney disease needs protein limited rather than raised, and that takes priority.";}
+  if(style==="highprotein"&&(preg||lac)){styleNote=" Pregnancy and breastfeeding already raise your protein target, so no extra push is applied on top.";}
   if(styleNote)calNote+=styleNote;   // calNote is assembled above, so append once the gates have run
   // Total-carb pin (Feinman 2015 / StatPearls bands). 0 = no pin, i.e. carbs stay the remainder.
   var carbPin=0;
@@ -941,21 +950,28 @@ tbody tr:nth-child(even){background:#f7faf8;}
   // macros always sum to the calorie total (fixes a rare edge: obese + very low BMR + aggressive cut).
   var pfMinCal=Math.ceil((pMid*4+fatMin*9)/10)*10;
   if(goalCal<pfMinCal){goalCal=pfMinCal;calNote+=" Raised to your protein + essential-fat minimum (~"+pfMinCal+" kcal) — you can't safely cut below that while keeping muscle.";}
-  var fatCeil=(style==="mediterranean")?0.40:0.35;   // PREDIMED arms ran ~40–41%E
+  var fatCeil=(style==="mediterranean")?0.40:((style==="lowfat")?0.30:0.35);   // PREDIMED arms ran ~40–41%E
   var fatHi=Math.round(fatCeil*goalCal/9);if(fatHi<fatMin)fatHi=fatMin;
   var fatCap=Math.floor((goalCal-pMid*4)/9);if(fatCap>=fatMin&&fatHi>fatCap)fatHi=fatCap;
   var fatLo=fatMin,carbHi,carbLo;
+  // Essential-fat floor for the two styles that could otherwise drift too low on fat:
+  // 20% of energy protects fatty-acid and fat-soluble-vitamin adequacy.
+  if(style==="lowfat"||style==="highprotein"){
+   var eFloor=Math.round(0.20*goalCal/9);
+   if(fatLo<eFloor)fatLo=eFloor;
+   if(fatHi<fatLo)fatHi=fatLo;
+  }
   if(carbPin){
    // Carbs pinned, so fat takes the remainder and the %-of-energy ceiling is waived.
    carbLo=carbHi=carbPin;
    var fatRem=Math.round((goalCal-pMid*4-carbPin*4)/9);
    fatLo=fatHi=Math.max(fatMin,fatRem);
   }else{
-   carbHi=Math.round((goalCal-pMid*4-fatMin*9)/4);carbLo=Math.round((goalCal-pMid*4-fatHi*9)/4);
+   carbHi=Math.round((goalCal-pMid*4-fatLo*9)/4);carbLo=Math.round((goalCal-pMid*4-fatHi*9)/4);
    if(carbHi<0)carbHi=0;if(carbLo<0)carbLo=0;if(carbLo>carbHi){var tt=carbLo;carbLo=carbHi;carbHi=tt;}
   }
   var fiber=Math.max(25,Math.round(14*goalCal/1000));
-  var satPct=(ldl||t2d)?0.06:0.10,satg=Math.round(satPct*goalCal/9),satOpt=Math.round(0.07*goalCal/9);
+  var satPct=(ldl||t2d)?0.06:((style==="lowfat")?0.07:0.10),satg=Math.round(satPct*goalCal/9),satOpt=Math.round(0.07*goalCal/9);
   var sugarPct=(t2d||nafld)?0.05:0.10,sugE=Math.round(sugarPct*goalCal/4),sugAHA=(age<=18)?25:(sex==="female"?25:36),sug=Math.min(sugE,sugAHA),sugAHAbind=(sugarPct!==0.05&&sugAHA<sugE);
   var sodium,sodNote;
   if(hf){sodium=2000;sodNote="heart failure: avoid excess (~2,000–3,000 mg); strict <1,500 is NOT advised (SODIUM-HF)";}
@@ -1002,7 +1018,7 @@ tbody tr:nth-child(even){background:#f7faf8;}
    :("the remainder after protein & fat — your main flex lever (more carbs if you eat less fat or train hard; fewer if insulin-resistant)"+((carbHi<70)?". Low here because protein + essential fat nearly fill this calorie level — normal on an aggressive cut":"")+"."));
   h+=card("Total fat",(fatLo===fatHi?(fatLo+" g/day"):(fatLo+"–"+fatHi+" g/day")),
    carbPin?("fat takes the remaining energy once carbs are capped (~"+Math.round(fatLo*9/goalCal*100)+"% of calories). Favour olive oil, nuts, seeds, avocado and fish over butter and processed meat — the saturated-fat ceiling below still applies.")
-   :("from a ~0.8 g/kg essential floor (~"+fatMin+" g) up to ~"+Math.round(fatCeil*100)+"% of calories; mostly unsaturated. Fat and carbs trade off."+(style==="mediterranean"?" Raised to 40% here — that's what the Mediterranean trial arms actually ate, mostly as olive oil and nuts.":"")));
+   :((style==="lowfat")?("held to 20\u201330% of calories \u2014 with a hard 20% floor, because fat below that costs you essential fatty acids and the absorption of vitamins A, D, E and K. The trap is replacing fat with refined carbs, so your fiber and added-sugar targets are doing the real work here."):(style==="highprotein")?("a 20%-of-calories floor is held so the extra protein doesn\u2019t squeeze fat too low; ceiling ~"+Math.round(fatCeil*100)+"%. Mostly unsaturated."):("from a ~0.8 g/kg essential floor (~"+fatMin+" g) up to ~"+Math.round(fatCeil*100)+"% of calories; mostly unsaturated. Fat and carbs trade off.")+(style==="mediterranean"?" Raised to 40% here — that's what the Mediterranean trial arms actually ate, mostly as olive oil and nuts.":"")));
   h+=card("Omega-3 (EPA+DHA)","250–500 mg/day",((fishA||plant)?"no fish → algal oil":"oily fish 2×/wk or algal oil")+dhaAdd+(ldl?" — with established heart disease, ~1,000 mg/day is reasonable (AHA)":"")+".");
   h+=card("Omega-3 (ALA)",ala+" g/day","the plant omega-3 (AI): walnuts, chia, flax, canola"+(plant?" — extra important plant-based; conversion to EPA/DHA is inefficient, so consider algal oil too":"")+".");
   h+=card("Fiber","~"+fiber+" g/day","14 g per 1,000 kcal, with a 25 g floor; 25–29 g is the sweet spot for lowest disease risk (Reynolds, Lancet 2019) and benefit keeps rising toward ~35 g — bigger/very active eaters aim the upper end; ramp +5 g/week"+(ibs?" — but if IBS is flaring, trial low-FODMAP first":"")+".");
